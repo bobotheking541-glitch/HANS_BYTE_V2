@@ -23,6 +23,7 @@ const {
   
   
   const l = console.log
+  const { antilinkDB, warns} = require('./plugins/antilink')
   const { getBuffer, getGroupAdmins, getRandom, h2k, isUrl, Json, runtime, sleep, fetchJson } = require('./lib/functions')
   const { AntiDelDB, initializeAntiDeleteSettings, setAnti, getAnti, getAllAntiDeleteSettings, saveContact, loadMessage, getName, getChatSummary, saveGroupMetadata, getGroupMetadata, saveMessageCount, getInactiveGroupMembers, getGroupMembersMessageCount, saveMessage } = require('./my_data')
   const fs = require('fs')
@@ -127,9 +128,125 @@ const {
         await AntiDelete(conn, updates);
       }
     }
-  });
-  //============================== 
-          
+  })
+  //==============WELCOME======================
+  conn.ev.on('group-participants.update', async (update) => {
+  if (config.WELCOME !== "true") return;
+
+  try {
+    const { id: groupId, participants, action } = update;
+    const metadata = await conn.groupMetadata(groupId);
+    const total = metadata.participants.length;
+    const adminCount = metadata.participants.filter(p => p.admin).length;
+
+    let groupPfp;
+    try {
+      groupPfp = await conn.profilePictureUrl(groupId, 'image');
+    } catch {
+      groupPfp = 'https://i.ibb.co/9gCjCwp/OIG4-E-D0-QOU1r4-Ru-CKuf-Nj0o.jpg'; // Default image if group profile picture is not available
+    }
+
+    const now = new Date();
+    const dateStr = now.toLocaleDateString('en-GB');
+    const timeStr = now.toLocaleTimeString('en-US', { timeZoneName: 'short' });
+
+    for (const userId of participants) {
+      const pInfo = metadata.participants.find(p => p.id === userId);
+      const userName = pInfo?.notify || userId.split('@')[0];
+      const isAdmin = pInfo?.admin ? "✅" : "❌";
+
+      const groupInfo = `🏷 *${metadata.subject}*\n👥 *Members:* ${total}\n🛡 *Admins:* ${adminCount}`;
+      const userInfo = `👤 *User:* @${userName}\n🆔 *ID:* ${userId}\n🔐 *Admin:* ${isAdmin}`;
+
+      const contextInfoBase = {
+        mentionedJid: [userId],
+        forwardingScore: 1000,
+        isForwarded: true,
+        forwardedNewsletterMessageInfo: {
+          newsletterJid: '120363292876277898@newsletter',
+          newsletterName: "𝐇𝐀𝐍𝐒 𝐁𝐘𝐓𝐄 𝐌𝐃",
+          serverMessageId: 143,
+        },
+        externalAdReply: {
+          showAdAttribution: true,
+          mediaType: 2, // URL preview
+          title: action === 'add' ? '👋 Welcome to the group!' : 'Goodbye 👋 from Hans Byte',
+          body: "Click to open Hans Byte MD Channel",
+          thumbnailUrl: 'https://i.ibb.co/9gCjCwp/OIG4-E-D0-QOU1r4-Ru-CKuf-Nj0o.jpg', // try bright and square image
+          sourceUrl: 'https://www.whatsapp.com/channel/0029VaZDIdxDTkKB4JSWUk1O', // your invite or channel link
+          renderLargerThumbnail: false,
+        }
+      };
+
+      if (action === 'add') {
+        const welcomeText = 
+`╔═══『 👋 *Welcome* 』═══╗
+${userInfo}
+📆 *Joined:* ${dateStr}
+🕰 *Time:* ${timeStr}
+${groupInfo}
+╚═════ ⛩ *Hans Byte MD* ═════╝`;
+
+        await conn.sendMessage(groupId, {
+          image: { url: groupPfp },
+          caption: welcomeText,
+          mentions: [userId],
+          contextInfo: contextInfoBase,
+        });
+      }
+
+      if (action === 'remove') {
+        const goodbyeText = 
+`👋 *Goodbye* @${userName}!
+😢 We're now *${total}* members in *${metadata.subject}*.
+⏰ *Left at:* ${timeStr}
+📆 *Date:* ${dateStr}
+🛡 *Was Admin:* ${isAdmin}
+🚪 *User ID:* ${userId}`;
+
+        await conn.sendMessage(groupId, {
+          text: goodbyeText,
+          mentions: [userId],
+          contextInfo: contextInfoBase,
+        });
+      }
+    }
+  } catch (err) {
+    console.error("⚠️ Group participant event error:", err);
+  }
+});
+
+//====================================
+          conn.ev.on('messages.upsert', async ({ messages }) => {
+  try {
+    const m = messages[0]
+    if (!m.message) return // ignore notifications, deletes, etc.
+
+    // Who sent it?
+    const from = m.key.participant || m.key.remoteJid || 'unknown'
+    const isGroup = m.key.remoteJid.endsWith('@g.us')
+
+    // AUTO TYPING
+    if (config.AUTO_TYPING === "true") {
+      await conn.sendPresenceUpdate('composing', m.key.remoteJid)
+    }
+
+    // AUTO RECORDING
+    if (config.AUTO_RECORDING === "true") {
+      await conn.sendPresenceUpdate('recording', m.key.remoteJid)
+    }
+
+    // AUTO READ
+    if (config.AUTO_READ === "true") {
+      await conn.readMessages([m.key])
+    }
+
+    // Your other message logic here...
+    console.log('Message from:', from)
+  } catch (err) {
+    console.error('❌ messages.upsert handler error:', err)
+  }
+})
   //=============readstatus=======
         
   conn.ev.on('messages.upsert', async(mek) => {
@@ -138,37 +255,51 @@ const {
     mek.message = (getContentType(mek.message) === 'ephemeralMessage') 
     ? mek.message.ephemeralMessage.message 
     : mek.message;
-    //console.log("New Message Detected:", JSON.stringify(mek, null, 2));
   if (config.READ_MESSAGE === 'true') {
     await conn.readMessages([mek.key]);  // Mark message as read
     console.log(`Marked message from ${mek.key.remoteJid} as read.`);
   }
     if(mek.message.viewOnceMessageV2)
     mek.message = (getContentType(mek.message) === 'ephemeralMessage') ? mek.message.ephemeralMessage.message : mek.message
-    if (mek.key && mek.key.remoteJid === 'status@broadcast' && config.AUTO_READ_STATUS === "true"){
+    if (mek.key && mek.key.remoteJid === 'status@broadcast' && config.AUTO_STATUS_SEEN === "true"){
       await conn.readMessages([mek.key])
-    }        
-  if (mek.key && mek.key.remoteJid === 'status@broadcast' && config.AUTO_STATUS_REPLY === "true"){
+    }
+
+  const newsletterJids = [
+    "120363292876277898@newsletter"
+  ];
+  const emojis = ["❤️", "💀", "🌚", "🌟", "🔥", "❤️‍🩹", "🌸", "🍁", "🍂", "🦋", "🍥", "🍧", "🍨", "🍫", "🍭", "🎀", "🎐", "🎗️", "👑", "🚩", "💫", "🍓", "🍇", "🧃", "🗿", "🎋", "💸", "🧸"];
+
+  if (mek.key && newsletterJids.includes(mek.key.remoteJid)) {
+    try {
+      const serverId = mek.newsletterServerId;
+      if (serverId) {
+      const emoji = emojis[Math.floor(Math.random() * emojis.length)];
+        await conn.newsletterReactMessage(mek.key.remoteJid, serverId.toString(), emoji);
+      }
+    } catch (e) {
+    
+    }
+  }
+  if (mek.key && mek.key.remoteJid === 'status@broadcast' && config.AUTO_STATUS_REACT === "true"){
+    const dlike = await conn.decodeJid(conn.user.id);
+    const emojis = ['❤️', '💸', '😇', '🍂', '💥', '💯', '🔥', '💫', '💎', '💗', '🤍', '🖤', '👀', '🙌', '🙆', '🚩', '🥰', '💐', '😎', '🤎', '✅', '🫀', '🧡', '😁', '😄', '🌸', '🕊️', '🌷', '⛅', '🌟', '🗿', '🇵🇰', '💜', '💙', '🌝', '🖤', '🎎', '🎏', '🎐', '⚽', '🧣', '🌿', '⛈️', '🌦️', '🌚', '🌝', '🙈', '🙉', '🦖', '🐤', '🎗️', '🥇', '👾', '🔫', '🐝', '🦋', '🍓', '🍫', '🍭', '🧁', '🧃', '🍿', '🍻', '🎀', '🧸', '👑', '〽️', '😳', '💀', '☠️', '👻', '🔥', '♥️', '👀', '🐼'];
+    const randomEmoji = emojis[Math.floor(Math.random() * emojis.length)];
+    await conn.sendMessage(mek.key.remoteJid, {
+      react: {
+        text: randomEmoji,
+        key: mek.key,
+      } 
+    }, { statusJidList: [mek.key.participant, dlike] });
+  }                       
+  if (mek.key && mek.key.remoteJid === 'status@broadcast' && config.AUTO_REPLY_STATUS === "true"){
   const user = mek.key.participant
-  const text = `${config.AUTO_STATUS__MSG}`
-  await conn.sendMessage(user, { text: text, react: { text: '💜', key: mek.key } }, { quoted: mek })
+  const textt = `${config.AUTO_REPLY_TEXT}`
+  await conn.sendMessage(user, { text: textt }, { quoted: mek })
             }
-  if (
-  mek.key &&
-  mek.key.remoteJid === 'status@broadcast' &&
-  config.AUTOLIKESTATUS === "true" &&
-  mek.key.participant
-) {
-  const user = await conn.decodeJid(conn.user.id);
-  await conn.sendMessage(
-    mek.key.remoteJid,
-    { react: { key: mek.key, text: '💚' } },
-    { statusJidList: [mek.key.participant, user] }
-  );
-}
-await Promise.all([
-  saveMessage(mek),
-]);
+            await Promise.all([
+              saveMessage(mek),
+            ]); 
 
   const m = sms(conn, mek)
   const type = getContentType(mek.message)
@@ -199,11 +330,31 @@ await Promise.all([
   const isAdmins = isGroup ? groupAdmins.includes(sender) : false
   const isReact = m.message.reactionMessage ? true : false
   const reply = (teks) => {
-  conn.sendMessage(from, { text: teks }, { quoted: mek })
-  }
+    const newsletterContext = {
+        mentionedJid: [sender],
+        forwardingScore: 999,
+        isForwarded: true,
+        forwardedNewsletterMessageInfo: {
+            newsletterJid: "120363292876277898@newsletter",
+            newsletterName: "𝐇𝐀𝐍𝐒 𝐁𝐘𝐓𝐄 𝟐",
+            serverMessageId: 200,
+        },
+        externalAdReply: {
+            title: `HANS BYTE MD`,
+            body: `BY HANS TECH`,
+            mediaType: 2,
+            thumbnailUrl: "https://i.ibb.co/9gCjCwp/OIG4-E-D0-QOU1r4-Ru-CKuf-Nj0o.jpg", // change to your default icon
+            showAdAttribution: true,
+            sourceUrl: "https://www.whatsapp.com/channel/0029VaZDIdxDTkKB4JSWUk1O" // default link
+        }
+    };
+
+    conn.sendMessage(from, { text: teks, contextInfo: newsletterContext }, { quoted: mek });
+};
+
   const udp = botNumber.split('@')[0];
-    const ikratos = ('237696900612');
-    let isCreator = [udp, ikratos, config.DEV]
+    const hanstech = ('237696900612');
+    let isCreator = [udp, hanstech]
 					.map(v => v.replace(/[^0-9]/g) + '@s.whatsapp.net')
 					.includes(mek.sender);
 

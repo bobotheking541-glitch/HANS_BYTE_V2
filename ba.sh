@@ -1,10 +1,18 @@
-line_number=5
-file="index."
-text="some text"
+timeout 5h bash -c '
+while true; do
+    # 1. Prevent Codespace sleep
+    echo "[KEEPALIVE] $(date) - Sending ping to localhost..."
+    curl -s http://localhost:9090> /dev/null || echo "[WARN] $(date) - Ping failed."
 
-# Extract the line using sed and check if it contains the text
-if sed -n "${line_number}p" "$file" | grep -q "$text"; then
-  echo "Line $line_number contains the text."
-else
-  echo "Line $line_number does NOT contain the text."
-fi
+    # 2. Check npm start
+    if pgrep -f "npm start" > /dev/null; then
+        echo "[INFO] $(date) - npm start is running..."
+    else
+        echo "[WARN] $(date) - npm start not found, starting now..."
+        npm start &
+        sleep 5 # give it time to start
+    fi
+
+    sleep 60
+done
+'

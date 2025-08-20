@@ -23,7 +23,7 @@ cmd({
 
         reply("⚡ *Fetching cool images...*\n_Just a sec while Hans Byte works its magic!_ ✨");
 
-        const apiUrl = `https://api.giftedtech.web.id/api/search/googleimage?apikey=gifted&query=${encodeURIComponent(q)}`;
+        const apiUrl = `https://api.giftedtech.co.ke/api/search/googleimage?apikey=gifted&query=${encodeURIComponent(q)}`;
         const res = await axios.get(apiUrl);
         const data = res.data;
 

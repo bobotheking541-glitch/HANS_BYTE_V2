@@ -24,7 +24,7 @@ cmd({
         const uptimeSeconds = process.uptime()
         const uptime = formatUptime(uptimeSeconds)
         const caption = `🛰️ *HANS BYTE V2 is Online!*\n\n` +
-                        `🤖 *Status:* Operational\n` +
+                        `🤖 *Status:* BETA\n` +
                         `⏱️ *Uptime:* ${uptime}\n` +
                         `🌐 *Host:* ${os.hostname()}\n` +
                         `💻 *Platform:* ${os.platform()} ${os.arch()}\n` +

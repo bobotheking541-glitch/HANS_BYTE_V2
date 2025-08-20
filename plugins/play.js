@@ -2,23 +2,24 @@ const { cmd } = require('../command');
 const fetch = require('node-fetch');
 
 cmd({
-    pattern: "apk",
-    alias: ["app", "apkdl"],
-    react: "📲",
-    desc: "📥 Download APK by name",
+    pattern: "mp3",
+    alias: ["ytmp3", "song"],
+    react: "🎵",
+    desc: "🎧 Download MP3 from YouTube URL",
     category: "📁 Download",
     filename: __filename
 }, async (conn, mek, m, { from, quoted, q, reply, sender }) => {
     try {
-        if (!q) return reply("❌ *Please enter the app name to search and download.*");
+        if (!q) return reply("❌ *Please enter the YouTube video link.*");
 
-        const api = `https://api.giftedtech.co.ke/api/download/apkdl?apikey=gifted&appName=${encodeURIComponent(q)}`;
+        const api = `https://api.giftedtech.co.ke/api/download/dlmp3?apikey=gifted&url=${encodeURIComponent(q)}`;
         const res = await fetch(api);
         const json = await res.json();
 
-        if (!json.success || !json.result?.download_url) return reply("🚫 *App not found or failed to fetch APK.*");
+        if (!json.success || !json.result?.download_url) 
+            return reply("🚫 *Video not found or failed to fetch MP3.*");
 
-        const { appname, appicon, developer, mimetype, download_url } = json.result;
+        const { title, thumbnail, quality, download_url } = json.result;
 
         const contextInfo = {
             mentionedJid: [sender],
@@ -33,41 +34,41 @@ cmd({
                 title: `HANS BYTE MD`,
                 body: `BY HANS TECH`,
                 mediaType: 2,
-                thumbnailUrl: appicon,
+                thumbnailUrl: thumbnail,
                 showAdAttribution: true,
                 sourceUrl: download_url
             }
         };
 
         const caption = `
-╭━[     *APK*    ]━╮
-┃ 🔹 *App Name:* ${appname}
-┃ 🔸 *Developer:* ${developer}
-┃ 🧊 *Status:* Uploading APK...
-╰━━━━━━━━━━━━━━━━━━╯
+╭━[    *MP3 Download*   ]━╮
+┃ 🎵 *Title:* ${title}
+┃ 📦 *Quality:* ${quality}
+┃ 🧊 *Status:* Uploading MP3...
+╰━━━━━━━━━━━━━━━━━━━━━━╯
 
 🚀 *𝐇𝐀𝐍𝐒 𝐁𝐘𝐓𝐄 𝟐*
 `.trim();
 
-        // Send preview with icon
+        // Send preview
         await conn.sendMessage(
             from,
             {
-                image: { url: appicon },
+                image: { url: thumbnail },
                 caption,
                 contextInfo
             },
             { quoted: mek }
         );
 
-        // Send the actual APK
+        // Send the actual MP3
         await conn.sendMessage(
             from,
             {
                 document: { url: download_url },
-                mimetype: mimetype,
-                fileName: `${appname}.apk`,
-                caption: "✅ *APK successfully sent!*\n🔧 *Use at your own risk.*",
+                mimetype: "audio/mpeg",
+                fileName: `${title}.mp3`,
+                caption: "✅ *MP3 successfully sent!*\n🔧 *PLEASE FOLLOW CHANNEL <3*",
                 contextInfo
             },
             { quoted: mek }

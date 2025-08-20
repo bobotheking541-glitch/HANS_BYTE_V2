@@ -22,16 +22,21 @@ cmd({
 
         reply("📦 *Generating ZIP archive of the site...*\nHold on tight! ⚙️");
 
-        const apiUrl = `https://api.giftedtech.web.id/api/tools/web2zip?apikey=gifted&url=${encodeURIComponent(q)}`;
+        const apiUrl = `https://apis.davidcyriltech.my.id/tools/downloadweb?url=${encodeURIComponent(q)}`;
         const { data } = await axios.get(apiUrl);
 
-        if (!data.success || !data.result?.download_url) {
+        if (
+            !data ||
+            data.success !== "true" ||
+            !data.response?.success ||
+            !data.response.downloadUrl
+        ) {
             return reply("❌ *API Error!* Could not generate the ZIP.\nTry again later or check the URL.");
         }
 
-        const { siteUrl, copiedFilesAmount, mimetype, download_url } = data.result;
+        const downloadUrl = data.response.downloadUrl;
 
-        // Newsletter mention
+        // Newsletter context (optional, you can remove if unused)
         const newsletterContext = {
             mentionedJid: [sender],
             forwardingScore: 1000,
@@ -46,26 +51,21 @@ cmd({
         await conn.sendMessage(mek.chat, {
             text:
                 `✅ *Website Saved!*\n\n` +
-                `🌐 *Site:* ${siteUrl}\n` +
-                `📁 *Files Copied:* ${copiedFilesAmount}\n` +
-                `📦 *MIME:* ${mimetype}\n\n` +
-                `⬇️ *Uploading the ZIP file...*`,
+                `🌐 *Site:* ${q}\n` +
+                `📦 *Preparing ZIP file for upload...*`,
             contextInfo: newsletterContext
         }, { quoted: mek });
 
-        // Download file to a temp path
+        // Download to temp file
         const tempPath = path.join(tmpdir(), `web2zip_${Date.now()}.zip`);
-        const response = await axios.get(download_url, {
+        const response = await axios.get(downloadUrl, {
             responseType: 'stream',
-            timeout: 2 * 60 * 1000, // 2 minutes
-            headers: {
-                'User-Agent': 'Mozilla/5.0',
-            }
+            timeout: 2 * 60 * 1000,
+            headers: { 'User-Agent': 'Mozilla/5.0' }
         });
 
         const writer = fs.createWriteStream(tempPath);
         response.data.pipe(writer);
-
         await new Promise((resolve, reject) => {
             writer.on('finish', resolve);
             writer.on('error', reject);
@@ -76,16 +76,14 @@ cmd({
             document: fs.readFileSync(tempPath),
             mimetype: 'application/zip',
             fileName: `website-archive.zip`,
-            caption: `🎁 *Download complete!*\n\n💡 Site: ${siteUrl}`,
+            caption: `🎁 *Download complete!*\n\n💡 Site: ${q}`,
             contextInfo: newsletterContext
         }, { quoted: mek });
 
-        // Clean up
-        fs.unlinkSync(tempPath);
+        fs.unlinkSync(tempPath); // cleanup
 
     } catch (e) {
         console.error("Web2Zip Error:", e.message);
-
         let errorMsg = "💥 *Something went wrong while downloading or uploading the ZIP.*";
 
         if (e.response?.data?.message) {

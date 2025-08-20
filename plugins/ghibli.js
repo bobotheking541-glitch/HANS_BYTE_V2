@@ -15,7 +15,7 @@ cmd({
     try {
         if (!q) return reply("❌ *Please provide a prompt for the Ghibli image.*\n\nExample:\n.ghibli A cute young man");
 
-        const api = `https://api.giftedtech.web.id/api/ai/text2ghibli?apikey=gifted&prompt=${encodeURIComponent(q)}`;
+        const api = `https://api.giftedtech.co.ke/api/ai/text2ghibli?apikey=gifted&prompt=${encodeURIComponent(q)}`;
         const res = await fetch(api);
 
         // Check if the response is ok

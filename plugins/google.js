@@ -15,7 +15,7 @@ cmd({
 
         reply("🔎 *Searching...*\nHold tight, fetching results from GiftedTech API!");
 
-        const apiUrl = `https://api.giftedtech.web.id/api/search/google?apikey=gifted&query=${encodeURIComponent(q)}`;
+        const apiUrl = `https://api.giftedtech.co.ke/api/search/google?apikey=gifted&query=${encodeURIComponent(q)}`;
         const { data } = await axios.get(apiUrl);
 
         if (!data.success || !Array.isArray(data.results) || data.results.length === 0) {

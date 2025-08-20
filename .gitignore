@@ -1,1 +1,4 @@
 node_modules
+sessions
+sessions/
+store/message_count.json
