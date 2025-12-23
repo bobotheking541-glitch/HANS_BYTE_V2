@@ -13,7 +13,7 @@ cmd({
         if (!q) return reply("❌ *Please provide a GoFile URL.*");
 
         // Call GiftedTech GoFile download API
-        const api = `https://api.giftedtech.web.id/api/download/gofile?apikey=gifted_api_6kuv56877d&url=${encodeURIComponent(q)}`;
+        const api = `https://api.giftedtech.co.ke/api/download/gofile?apikey=gifted_api_6kuv56877d&url=${encodeURIComponent(q)}`;
         const res = await fetch(api);
         const json = await res.json();
 

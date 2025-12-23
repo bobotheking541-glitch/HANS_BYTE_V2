@@ -209,7 +209,7 @@ ${userInfo}
 📆 *Joined:* ${dateStr}
 🕰 *Time:* ${timeStr}
 ${groupInfo}
-╚═════ ⛩ *Hans Byte MD* ═════╝`;
+╚═════ ⛩ *HANS BYTE V2* ═════╝`;
         await safeSend(groupId, {
           image: { url: groupPfp },
           caption: welcomeText,

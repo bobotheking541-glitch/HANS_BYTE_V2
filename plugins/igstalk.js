@@ -17,7 +17,7 @@ async (conn, mek, m, { from, args }) => {
     }
 
     const username = args[0];
-    const apiUrl = `https://api.giftedtech.web.id/api/stalk/igstalk?apikey=gifted_api_6kuv56877d&username=${encodeURIComponent(username)}`;
+    const apiUrl = `https://api.giftedtech.co.ke/api/stalk/igstalk?apikey=gifted_api_6kuv56877d&username=${encodeURIComponent(username)}`;
     const { data } = await axios.get(apiUrl);
 
     if (!data.success || !data.result) {

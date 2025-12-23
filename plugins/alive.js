@@ -1,47 +1,92 @@
-const os = require('os')
-const config = require('../config')
-const { cmd, commands } = require('../command')
+// plugins/alive.js
+const os = require('os');
+const config = require('../config');
+const { cmd } = require('../command');
 
-// Uptime function
 function formatUptime(seconds) {
-    const pad = (s) => (s < 10 ? '0' : '') + s;
-    const hrs = Math.floor(seconds / 3600)
-    const mins = Math.floor((seconds % 3600) / 60)
-    const secs = Math.floor(seconds % 60)
-    return `${pad(hrs)}h ${pad(mins)}m ${pad(secs)}s`
+  const pad = (s) => (s < 10 ? '0' : '') + s;
+  const hrs = Math.floor(seconds / 3600);
+  const mins = Math.floor((seconds % 3600) / 60);
+  const secs = Math.floor(seconds % 60);
+  return `${pad(hrs)}h ${pad(mins)}m ${pad(secs)}s`;
 }
 
 cmd({
-    pattern: "alive",
-    react: "🛸",
-    desc: "Check bot online or no.",
-    category: "main",
-    filename: __filename
-}, async (conn, mek, m, {
-    from, reply
-}) => {
-    try {
-        const uptimeSeconds = process.uptime()
-        const uptime = formatUptime(uptimeSeconds)
-        const caption = `🛰️ *HANS BYTE V2 is Online!*\n\n` +
-                        `🤖 *Status:* BETA\n` +
-                        `⏱️ *Uptime:* ${uptime}\n` +
-                        `🌐 *Host:* ${os.hostname()}\n` +
-                        `💻 *Platform:* ${os.platform()} ${os.arch()}\n` +
-                        `📦 *Memory:* ${Math.round(os.freemem() / 1024 / 1024)}MB free / ${Math.round(os.totalmem() / 1024 / 1024)}MB total\n\n` +
-                        `🧠 *Created by:* Hans Tech\n` +
-                        `🚀 *Powering conversations globally*\n\n` +
-                        `✨ Type *${config.PREFIX}menu* to get started!`
+  pattern: 'alive',
+  react: '🛸',
+  desc: 'Check bot online status.',
+  category: 'main',
+  filename: __filename
+}, async (conn, mek, m, { from, reply, pushname }) => {
+  const quotedOption = mek && typeof mek === 'object' ? { quoted: mek } : {};
+  const IMG = 'https://i.ibb.co/PS5DZdJ/Chat-GPT-Image-Mar-30-2025-12-53-39-PM.png';
 
-        return await conn.sendMessage(from, {
-            image: {
-                url: "https://i.ibb.co/9gCjCwp/OIG4-E-D0-QOU1r4-Ru-CKuf-Nj0o.jpg"
-            },
-            caption: caption
-        }, { quoted: mek })
+  try {
+    const uptime = formatUptime(process.uptime());
+    const freemem = Math.round(os.freemem() / 1024 / 1024);
+    const totalmem = Math.round(os.totalmem() / 1024 / 1024);
 
-    } catch (e) {
-        console.log(e)
-        reply(`${e}`)
-    }
-})
+    const caption =
+      `🛰️ *HANS BYTE V2 — STATUS PANEL*\n\n` +
+      `👤 *User:* ${pushname || 'Anonymous'}\n` +
+      `🤖 *Bot:* Online & Active\n` +
+      `🕐 *Uptime:* ${uptime}\n` +
+      `💻 *Host:* ${os.hostname()}\n` +
+      `⚙️ *Platform:* ${os.platform()} ${os.arch()}\n` +
+      `📦 *Memory:* ${freemem}MB Free / ${totalmem}MB Total\n` +
+      `🚀 *USAGE:* Type ${config.PREFIX}menu to start`;
+
+    // Interactive Buttons Payload
+    const interactivePayload = {
+      image: { url: IMG },
+      caption,
+      footer: 'HANS BYTE V2',
+      interactiveButtons: [
+        {
+          name: 'cta_url',
+          buttonParamsJson: JSON.stringify({
+            display_text: '📢 JOIN CHANNEL',
+            url: 'https://whatsapp.com/channel/0029Vb6F9V9FHWpsqWq1CF14'
+          })
+        },
+        {
+          name: 'cta_url',
+          buttonParamsJson: JSON.stringify({
+            display_text: '📞 CONTACT OWNER',
+            url: 'https://wa.me/237696900612'
+          })
+        },
+        {
+          name: 'cta_url',
+          buttonParamsJson: JSON.stringify({
+            display_text: '💻 VISIT REPO',
+            url: 'https://github.com/Haroldmth/HANS_BYTE_V2'
+          })
+        },
+        {
+          name: 'cta_copy',
+          buttonParamsJson: JSON.stringify({
+            display_text: '🔗 COPY REPO LINK',
+            copy_code: 'https://github.com/Haroldmth/HANS_BYTE_V2'
+          })
+        },
+        {
+          name: 'open_webview',
+          buttonParamsJson: JSON.stringify({
+            title: '🌐 Open Channel in WebView',
+            link: {
+              in_app_webview: true,
+              url: 'https://whatsapp.com/channel/0029Vb6F9V9FHWpsqWq1CF14'
+            }
+          })
+        }
+      ]
+    };
+
+    await conn.sendMessage(from, interactivePayload, quotedOption);
+
+  } catch (e) {
+    console.error('Alive command error:', e);
+    await reply(`❌ Error: ${e.message || e}`);
+  }
+});

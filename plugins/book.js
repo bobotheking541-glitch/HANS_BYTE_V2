@@ -9,10 +9,7 @@ cmd({
     filename: __filename
 },
 async (conn, mek, m, {
-    from, quoted, body, isCmd, command, args, q,
-    isGroup, sender, senderNumber, botNumber2, botNumber,
-    pushname, isMe, isOwner, groupMetadata, groupName,
-    participants, groupAdmins, isBotAdmins, isAdmins, reply
+    from, quoted, body, isCmd, command, args, q, reply
 }) => {
     try {
         if (!q) return reply("❗Please provide some text.\n\nExample: *.book DavidCyril*")

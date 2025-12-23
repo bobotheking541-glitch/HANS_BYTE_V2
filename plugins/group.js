@@ -1,18 +1,114 @@
 const config = require('../config');
 const { cmd } = require('../command');
 const { isUrl } = require("../lib/functions");
+const fs = require('fs');
+const path = require('path');
 
-function toArray(value) {
-    if (!value) return [];
-    if (Array.isArray(value)) return value;
-    return [value];
+// =============== JID RESOLUTION UTILITIES ===============
+
+/**
+ * Load LID mappings from group metadata
+ * Returns a Map of lid -> canonical JID
+ */
+function loadLidMappings(metadata) {
+    const map = new Map();
+    if (!metadata?.participants) return map;
+    
+    for (const p of metadata.participants) {
+        if (p.lid && p.id) {
+            map.set(p.lid.toLowerCase(), p.id.toLowerCase());
+        }
+    }
+    return map;
 }
 
+/**
+ * Resolve a JID (handles @lid format and standard format)
+ * Returns canonical JID in format: 237xxxxxx@s.whatsapp.net
+ */
+function resolveToJid(jid, lidMap) {
+    if (!jid) return null;
+    
+    const jidStr = String(jid).toLowerCase();
+    
+    // Check if it's a lid format
+    if (jidStr.includes('@lid')) {
+        const resolved = lidMap.get(jidStr);
+        if (resolved) return resolved;
+    }
+    
+    // Already in standard format
+    if (jidStr.includes('@s.whatsapp.net')) {
+        return jidStr;
+    }
+    
+    // Extract number and append domain
+    const num = jidStr.split('@')[0].replace(/\D/g, '');
+    if (num && /^\d{6,15}$/.test(num)) {
+        return `${num}@s.whatsapp.net`;
+    }
+    
+    return jidStr;
+}
+
+/**
+ * Check if a user is an admin in the group
+ */
+function isUserAdmin(userJid, metadata) {
+    if (!metadata?.participants) return false;
+    
+    const lidMap = loadLidMappings(metadata);
+    const resolvedUser = resolveToJid(userJid, lidMap);
+    
+    return metadata.participants.some(p => {
+        const resolvedParticipant = resolveToJid(p.id, lidMap);
+        const isAdmin = (p.admin === 'admin' || p.admin === 'superadmin');
+        return resolvedParticipant === resolvedUser && isAdmin;
+    });
+}
+
+/**
+ * Check if user is bot owner
+ */
+function isBotOwner(userJid) {
+    const rawOwners = Array.isArray(config?.OWNER_NUM)
+        ? config.OWNER_NUM
+        : String(config?.OWNER_NUM ?? "237694668970")
+            .split(',')
+            .map(s => s.trim());
+    
+    const ownerJids = rawOwners
+        .filter(Boolean)
+        .map(o => {
+            let s = String(o).trim();
+            if (!s) return null;
+            if (!s.includes('@') && /^\d{6,15}$/.test(s)) {
+                s = `${s}@s.whatsapp.net`;
+            }
+            return s.toLowerCase();
+        })
+        .filter(Boolean);
+    
+    const userJidLower = String(userJid || "").toLowerCase();
+    return ownerJids.includes(userJidLower);
+}
+
+/**
+ * Extract display number from JID for mentions
+ */
 function jidToNumber(jid) {
     if (!jid) return '';
     let base = jid.split('@')[0];
     base = base.split(':')[0];
     return base;
+}
+
+// =============== HELPER FUNCTIONS ===============
+
+function toArray(value) {
+    if (!value) return [];
+    if (Array.isArray(value)) return value;
+    return [value];
 }
 
 async function doReact(emoji, m, conn) {
@@ -35,6 +131,8 @@ const newsletterContext = {
     },
 };
 
+// =============== COMMANDS ===============
+
 cmd({
     pattern: "setname",
     alias: ["upname", "groupname", "gn", "name"],
@@ -49,19 +147,11 @@ async (conn, mek, m, { from, isGroup, sender, args, reply }) => {
             return reply("❌ This command only works in group chats!");
         }
 
-        const newName = args.join(" ").trim();
         const metadata = await conn.groupMetadata(from);
+        const lidMap = loadLidMappings(metadata);
+        const resolvedSender = resolveToJid(sender, lidMap);
 
-        // Normalize numbers for accurate comparison
-        const groupAdmins = metadata.participants
-            .filter(p => p.admin !== null)
-            .map(p => jidToNumber(p.id));
-
-        const senderNum = jidToNumber(sender);
-
-        const isSenderAdmin = groupAdmins.includes(senderNum);
-
-        if (!isSenderAdmin) {
+        if (!isUserAdmin(resolvedSender, metadata)) {
             return conn.sendMessage(from, {
                 text: "❌ Only *group admins* can update the group name.",
                 contextInfo: { ...newsletterContext, mentionedJid: [sender] },
@@ -70,10 +160,10 @@ async (conn, mek, m, { from, isGroup, sender, args, reply }) => {
 
         await doReact("✏️", m, conn);
 
+        const newName = args.join(" ").trim();
         if (!newName) {
             return conn.sendMessage(from, {
                 text: "❌ Please provide the new group name.\n\n📌 *Example:* `.setname Awesome Tech Group`",
-                contextInfo: { ...newsletterContext, mentionedJid: [sender] },
                 contextInfo: newsletterContext
             }, { quoted: mek });
         }
@@ -92,15 +182,10 @@ async (conn, mek, m, { from, isGroup, sender, args, reply }) => {
         await doReact("❌", m, conn);
         await conn.sendMessage(from, {
             text: "❌ Failed to update group name. Make sure I have admin rights!",
-            contextInfo: { ...newsletterContext, mentionedJid: [sender] },
             contextInfo: newsletterContext
         }, { quoted: mek });
     }
 });
-
-
-
-
 
 cmd({
     pattern: "setdesc",
@@ -116,18 +201,11 @@ async (conn, mek, m, { from, isGroup, sender, args, reply }) => {
             return reply("❌ This command only works in group chats!");
         }
 
-        const newDesc = args.join(" ").trim();
         const metadata = await conn.groupMetadata(from);
+        const lidMap = loadLidMappings(metadata);
+        const resolvedSender = resolveToJid(sender, lidMap);
 
-        // Normalize numbers for accurate comparison
-        const groupAdmins = metadata.participants
-            .filter(p => p.admin !== null)
-            .map(p => jidToNumber(p.id));
-
-        const senderNum = jidToNumber(sender);
-        const isSenderAdmin = groupAdmins.includes(senderNum);
-
-        if (!isSenderAdmin) {
+        if (!isUserAdmin(resolvedSender, metadata)) {
             return conn.sendMessage(from, {
                 text: "❌ Only *group admins* can update the group description.",
                 contextInfo: { ...newsletterContext, mentionedJid: [sender] },
@@ -136,6 +214,7 @@ async (conn, mek, m, { from, isGroup, sender, args, reply }) => {
 
         await doReact("📝", m, conn);
 
+        const newDesc = args.join(" ").trim();
         if (!newDesc) {
             return conn.sendMessage(from, {
                 text: "❌ Please provide the new group description.\n\n📌 *Example:* `.setdesc Welcome to Awesome Tech Group 🚀`",
@@ -162,111 +241,102 @@ async (conn, mek, m, { from, isGroup, sender, args, reply }) => {
     }
 });
 
-
-// ─── Promote Command ─────────────────────────────
 cmd({
-  pattern: "promote",
-  use: ".promote @user (or reply)",
-  desc: "Promote a member to admin (admins only).",
-  category: "group",
-  filename: __filename
+    pattern: "promote",
+    use: ".promote @user (or reply)",
+    desc: "Promote a member to admin (admins only).",
+    category: "group",
+    filename: __filename
 }, async (conn, mek, m, { from, isGroup, sender, reply, args }) => {
-  if (!isGroup) return reply("❌ This command works only in groups!");
-  const metadata = await conn.groupMetadata(from);
+    if (!isGroup) return reply("❌ This command works only in groups!");
+    
+    const metadata = await conn.groupMetadata(from);
+    const lidMap = loadLidMappings(metadata);
+    const resolvedSender = resolveToJid(sender, lidMap);
 
-  // Build list of admin numbers
-  const adminNums = metadata.participants
-    .filter(p => p.admin !== null)
-    .map(p => jidToNumber(p.id));
+    if (!isUserAdmin(resolvedSender, metadata))
+        return reply("⚠️ Only group admins can promote!");
 
-  const senderNum = jidToNumber(sender);
-  if (!adminNums.includes(senderNum))
-    return reply("⚠️ Only group admins can promote!");
+    let targetJid =
+        m.mentionedJid?.[0] ||
+        (args[0] && `${args[0].replace(/\D/g, "")}@s.whatsapp.net`) ||
+        (m.message.extendedTextMessage?.contextInfo?.participant);
 
-  // Determine target: mention -> args[0] -> reply
-  let targetJid =
-    m.mentionedJid?.[0] ||
-    (args[0] && `${args[0].replace(/\D/g, "")}@s.whatsapp.net`) ||
-    (m.message.extendedTextMessage?.contextInfo?.participant);
+    if (!targetJid)
+        return reply("🔎 Please mention, pass number, or reply to the user you want to promote!");
 
-  if (!targetJid)
-    return reply("🔎 Please mention, pass number, or reply to the user you want to promote!");
+    const resolvedTarget = resolveToJid(targetJid, lidMap);
 
-  const targetNum = jidToNumber(targetJid);
-  if (adminNums.includes(targetNum))
-    return reply(`⚠️ @${targetNum} is already an admin!`, {}, { mentions: [targetJid] });
+    if (isUserAdmin(resolvedTarget, metadata))
+        return reply(`⚠️ @${jidToNumber(targetJid)} is already an admin!`, {}, { mentions: [targetJid] });
 
-  await conn.groupParticipantsUpdate(from, [targetJid], "promote");
+    await conn.groupParticipantsUpdate(from, [targetJid], "promote");
 
-  const out = `
+    const out = `
 ━━━━━━━━━━━━━━━━━━━━━━━
 🛡️ *HANS BYTE V2 – PROMOTE* 🛡️
 ━━━━━━━━━━━━━━━━━━━━━━━
 
-👤 *User:* @${targetNum}
+👤 *User:* @${jidToNumber(targetJid)}
 📌 *Action:* Promoted to Admin
-⚡ *By:* @${senderNum}
+⚡ *By:* @${jidToNumber(sender)}
 
 ━━━━━━━━━━━━━━━━━━━━━━━
 🔥 Powered by HANS BYTE V2
 ━━━━━━━━━━━━━━━━━━━━━━━
-  `;
-  await conn.sendMessage(from, { text: out, mentions: [targetJid, sender], contextInfo: newsletterContext }, { quoted: mek });
-  await doReact("🔼", m, conn);
+    `;
+    await conn.sendMessage(from, { text: out, mentions: [targetJid, sender], contextInfo: newsletterContext }, { quoted: mek });
+    await doReact("🔼", m, conn);
 });
 
-
-// ─── Demote Command ─────────────────────────────
 cmd({
-  pattern: "demote",
-  use: ".demote @user (or reply)",
-  desc: "Demote an admin to member (admins only).",
-  category: "group",
-  filename: __filename
+    pattern: "demote",
+    use: ".demote @user (or reply)",
+    desc: "Demote an admin to member (admins only).",
+    category: "group",
+    filename: __filename
 }, async (conn, mek, m, { from, isGroup, sender, reply, args }) => {
-  if (!isGroup) return reply("❌ This command works only in groups!");
-  const metadata = await conn.groupMetadata(from);
+    if (!isGroup) return reply("❌ This command works only in groups!");
+    
+    const metadata = await conn.groupMetadata(from);
+    const lidMap = loadLidMappings(metadata);
+    const resolvedSender = resolveToJid(sender, lidMap);
 
-  const adminNums = metadata.participants
-    .filter(p => p.admin !== null)
-    .map(p => jidToNumber(p.id));
+    if (!isUserAdmin(resolvedSender, metadata))
+        return reply("⚠️ Only group admins can demote!");
 
-  const senderNum = jidToNumber(sender);
-  if (!adminNums.includes(senderNum))
-    return reply("⚠️ Only group admins can demote!");
+    let targetJid =
+        m.mentionedJid?.[0] ||
+        (args[0] && `${args[0].replace(/\D/g, "")}@s.whatsapp.net`) ||
+        (m.message.extendedTextMessage?.contextInfo?.participant);
 
-  // Determine target: mention -> args[0] -> reply
-  let targetJid =
-    m.mentionedJid?.[0] ||
-    (args[0] && `${args[0].replace(/\D/g, "")}@s.whatsapp.net`) ||
-    (m.message.extendedTextMessage?.contextInfo?.participant);
+    if (!targetJid)
+        return reply("🔎 Please mention, pass number, or reply to the user you want to demote!");
 
-  if (!targetJid)
-    return reply("🔎 Please mention, pass number, or reply to the user you want to demote!");
+    const resolvedTarget = resolveToJid(targetJid, lidMap);
 
-  const targetNum = jidToNumber(targetJid);
-  if (!adminNums.includes(targetNum))
-    return reply(`⚠️ @${targetNum} is not an admin!`, {}, { mentions: [targetJid] });
+    if (!isUserAdmin(resolvedTarget, metadata))
+        return reply(`⚠️ @${jidToNumber(targetJid)} is not an admin!`, {}, { mentions: [targetJid] });
 
-  await conn.groupParticipantsUpdate(from, [targetJid], "demote");
+    await conn.groupParticipantsUpdate(from, [targetJid], "demote");
 
-  const out = `
+    const out = `
 ━━━━━━━━━━━━━━━━━━━━━━━
 ⚔️ *HANS BYTE V2 – DEMOTE* ⚔️
 ━━━━━━━━━━━━━━━━━━━━━━━
 
-👤 *User:* @${targetNum}
+👤 *User:* @${jidToNumber(targetJid)}
 📌 *Action:* Demoted to Member
-⚡ *By:* @${senderNum}
+⚡ *By:* @${jidToNumber(sender)}
 
 ━━━━━━━━━━━━━━━━━━━━━━━
 🔥 Powered by HANS BYTE V2
 ━━━━━━━━━━━━━━━━━━━━━━━
-  `;
-  await conn.sendMessage(from, { text: out, mentions: [targetJid, sender], contextInfo: newsletterContext }, { quoted: mek });
-  await doReact("🔽", m, conn);
+    `;
+    await conn.sendMessage(from, { text: out, mentions: [targetJid, sender], contextInfo: newsletterContext }, { quoted: mek });
+    await doReact("🔽", m, conn);
 });
-//=========== MUTE GROUP ==========
+
 cmd({
     pattern: "mute",
     use: ".mute",
@@ -276,10 +346,12 @@ cmd({
 },
 async (conn, mek, m, { from, isGroup, sender, reply }) => {
     if (!isGroup) return reply("❌ Group only!");
+    
     const metadata = await conn.groupMetadata(from);
+    const lidMap = loadLidMappings(metadata);
+    const resolvedSender = resolveToJid(sender, lidMap);
 
-    const admins = metadata.participants.filter(p => p.admin).map(p => jidToNumber(p.id));
-    if (!admins.includes(jidToNumber(sender)))
+    if (!isUserAdmin(resolvedSender, metadata))
         return reply("❌ Only admins can mute group!");
 
     await conn.groupSettingUpdate(from, "announcement");
@@ -287,7 +359,6 @@ async (conn, mek, m, { from, isGroup, sender, reply }) => {
     reply("✅ Group muted. Only admins can message now.");
 });
 
-// ========== UNMUTE GROUP ==========
 cmd({
     pattern: "unmute",
     use: ".unmute",
@@ -297,10 +368,12 @@ cmd({
 },
 async (conn, mek, m, { from, isGroup, sender, reply }) => {
     if (!isGroup) return reply("❌ Group only!");
+    
     const metadata = await conn.groupMetadata(from);
+    const lidMap = loadLidMappings(metadata);
+    const resolvedSender = resolveToJid(sender, lidMap);
 
-    const admins = metadata.participants.filter(p => p.admin).map(p => jidToNumber(p.id));
-    if (!admins.includes(jidToNumber(sender)))
+    if (!isUserAdmin(resolvedSender, metadata))
         return reply("❌ Only admins can unmute group!");
 
     await conn.groupSettingUpdate(from, "not_announcement");
@@ -308,7 +381,6 @@ async (conn, mek, m, { from, isGroup, sender, reply }) => {
     reply("✅ Group unmuted. Everyone can message now.");
 });
 
-// ========== LOCK SETTINGS ==========
 cmd({
     pattern: "lock",
     use: ".lock",
@@ -318,10 +390,12 @@ cmd({
 }, 
 async (conn, mek, m, { from, isGroup, sender, reply }) => {
     if (!isGroup) return reply("❌ Group only!");
+    
     const metadata = await conn.groupMetadata(from);
+    const lidMap = loadLidMappings(metadata);
+    const resolvedSender = resolveToJid(sender, lidMap);
 
-    const admins = metadata.participants.filter(p => p.admin).map(p => jidToNumber(p.id));
-    if (!admins.includes(jidToNumber(sender)))
+    if (!isUserAdmin(resolvedSender, metadata))
         return reply("❌ Only admins can lock!");
 
     await conn.groupSettingUpdate(from, "locked");
@@ -329,7 +403,6 @@ async (conn, mek, m, { from, isGroup, sender, reply }) => {
     reply("✅ Group settings locked.");
 });
 
-// ========== UNLOCK SETTINGS ==========
 cmd({
     pattern: "unlock",
     use: ".unlock",
@@ -339,10 +412,12 @@ cmd({
 }, 
 async (conn, mek, m, { from, isGroup, sender, reply }) => {
     if (!isGroup) return reply("❌ Group only!");
+    
     const metadata = await conn.groupMetadata(from);
+    const lidMap = loadLidMappings(metadata);
+    const resolvedSender = resolveToJid(sender, lidMap);
 
-    const admins = metadata.participants.filter(p => p.admin).map(p => jidToNumber(p.id));
-    if (!admins.includes(jidToNumber(sender)))
+    if (!isUserAdmin(resolvedSender, metadata))
         return reply("❌ Only admins can unlock!");
 
     await conn.groupSettingUpdate(from, "unlocked");
@@ -350,7 +425,6 @@ async (conn, mek, m, { from, isGroup, sender, reply }) => {
     reply("✅ Group settings unlocked.");
 });
 
-// ========== ADD MEMBER ==========
 cmd({
     pattern: "add",
     use: ".add <number>",
@@ -360,10 +434,12 @@ cmd({
 }, 
 async (conn, mek, m, { from, isGroup, sender, args, reply }) => {
     if (!isGroup) return reply("❌ Group only!");
+    
     const metadata = await conn.groupMetadata(from);
+    const lidMap = loadLidMappings(metadata);
+    const resolvedSender = resolveToJid(sender, lidMap);
 
-    const admins = metadata.participants.filter(p => p.admin).map(p => jidToNumber(p.id));
-    if (!admins.includes(jidToNumber(sender)))
+    if (!isUserAdmin(resolvedSender, metadata))
         return reply("❌ Only admins can add!");
 
     const number = args[0];
@@ -375,47 +451,32 @@ async (conn, mek, m, { from, isGroup, sender, args, reply }) => {
     reply(`✅ Added ${number} to the group.`);
 });
 
-// ========== LEAVE GROUP ==========
 cmd({
-  pattern: "leave",
-  use: ".leave",
-  desc: "Bot leaves the group (owner/sudo only).",
-  category: "owner",
-  filename: __filename
+    pattern: "leave",
+    use: ".leave",
+    desc: "Bot leaves the group (owner/sudo only).",
+    category: "owner",
+    filename: __filename
 },
 async (conn, mek, m, { from, sender, reply }) => {
-  const senderJid = sender;
-  const senderNumber = senderJid.split('@')[0];
+    const lidMap = new Map();
+    const resolvedSender = resolveToJid(sender, lidMap);
 
-  const isBotOwner =
-    config.OWNER_NUM.includes(senderNumber) ||
-    config.OWNER_NUM.includes(senderJid);
-  
-  console.log("== LEAVE CMD DEBUG ==");
-  console.log("Sender:", sender);
-  console.log("Sender Number:", senderNumber);
-  console.log("isBotOwner:", isBotOwner);
-  console.log("config.OWNER_NUM:", config.OWNER_NUM);
-
-  if (!isBotOwner) {
-    await reply("❌ Only Owner/Sudo can use this!");
-    return;
-  }
-
-  try {
-    if (typeof doReact === "function") {
-      await doReact("👋", m, conn);
+    if (!isBotOwner(resolvedSender)) {
+        await reply("❌ Only Owner/Sudo can use this!");
+        return;
     }
-    await conn.sendMessage(from, { text: "👋 Goodbye everyone!" }, { quoted: mek });
-    await conn.groupLeave(from);
-  } catch (e) {
-    console.error(e);
-    await reply("❌ Error while leaving the group.");
-  }
+
+    try {
+        await doReact("👋", m, conn);
+        await conn.sendMessage(from, { text: "👋 Goodbye everyone!" }, { quoted: mek });
+        await conn.groupLeave(from);
+    } catch (e) {
+        console.error(e);
+        await reply("❌ Error while leaving the group.");
+    }
 });
 
-
-// ========== TAG ALL ==========
 cmd({
     pattern: "tagall",
     use: ".tagall <msg>",
@@ -427,18 +488,15 @@ async (conn, mek, m, { from, isGroup, sender, args, reply }) => {
     if (!isGroup) return reply("❌ This command works only in groups!");
     
     const metadata = await conn.groupMetadata(from);
-    const admins = metadata.participants.filter(p => p.admin)
-        .map(p => jidToNumber(p.id));
-    if (!admins.includes(jidToNumber(sender)))
+    const lidMap = loadLidMappings(metadata);
+    const resolvedSender = resolveToJid(sender, lidMap);
+
+    if (!isUserAdmin(resolvedSender, metadata))
         return reply("⚠️ Only group admins can use this command!");
 
-    // Custom message or default
-    const text = args.join(" ") || "✨ Hey fam! Let’s gather up ✨";
-
-    // Mentions
+    const text = args.join(" ") || "✨ Hey fam! Let's gather up ✨";
     const mentions = metadata.participants.map(p => p.id);
 
-    // Cool HANS BYTE V2 Style Message
     const hansTag = `
 ━━━━━━━━━━━━━━━━━━━━━━━
 🌐 *HANS BYTE V2 BROADCAST* 🌐
@@ -463,7 +521,7 @@ ${mentions.map(u => `⚡ @${jidToNumber(u)}`).join("\n")}
 
     await doReact("📣", m, conn);
 });
-// ========== DELETE MESSAGE ==========
+
 cmd({
     pattern: "del",
     use: ".del",
@@ -473,10 +531,12 @@ cmd({
 },
 async (conn, mek, m, { from, isGroup, sender, reply }) => {
     if (!isGroup) return reply("❌ Group only!");
+    
     const metadata = await conn.groupMetadata(from);
+    const lidMap = loadLidMappings(metadata);
+    const resolvedSender = resolveToJid(sender, lidMap);
 
-    const admins = metadata.participants.filter(p => p.admin).map(p => jidToNumber(p.id));
-    if (!admins.includes(jidToNumber(sender)))
+    if (!isUserAdmin(resolvedSender, metadata))
         return reply("❌ Only admins can delete!");
 
     if (!mek.message?.extendedTextMessage?.contextInfo?.stanzaId)
@@ -489,29 +549,6 @@ async (conn, mek, m, { from, isGroup, sender, reply }) => {
     await doReact("🗑️", m, conn);
 });
 
-// ─── Welcome New Member ─────────────────────────────
-cmd({
-    pattern: "welcome",
-    desc: "Greet new members automatically.",
-    category: "group",
-    filename: __filename
-},
-async (conn, mek, m) => {
-    const from = m.key.remoteJid;
-    if (!m.message || !m.message.groupParticipantAdded) return;
-    const added = m.message.groupParticipantAdded.participants;
-    const metadata = await conn.groupMetadata(from);
-
-    // Retrieve saved welcome message for this group
-    const template = `👋 Hello @user, welcome to *${metadata.subject}*! \nFeel free to introduce yourself.`;
-
-    for (let user of added) {
-        const text = template.replace(/@user/, `@${jidToNumber(user)}`);
-        await conn.sendMessage(from, { text, mentions: [user] });
-    }
-});
-
-// ─── Get Group Invite Link ─────────────────────────────
 cmd({
     pattern: "getlink",
     alias: ["link", "gclink", "grouplink"],
@@ -522,13 +559,11 @@ cmd({
 },
 async (conn, mek, m, { from, isGroup, sender, reply }) => {
     if (!isGroup) return reply("❌ This command works only in groups!");
-    const metadata = await conn.groupMetadata(from);
     const link = await conn.groupInviteCode(from);
     await doReact("🔗", m, conn);
     await conn.sendMessage(from, { text: `🔗 Group Invite Link:\nhttps://chat.whatsapp.com/${link}` }, { quoted: mek });
 });
 
-// ─── Revoke Group Invite Link ─────────────────────────────
 cmd({
     pattern: "revokelink",
     use: ".revokelink",
@@ -538,9 +573,12 @@ cmd({
 },
 async (conn, mek, m, { from, isGroup, sender, reply }) => {
     if (!isGroup) return reply("❌ Groups only!");
+    
     const metadata = await conn.groupMetadata(from);
-    const admins = metadata.participants.filter(p => p.admin).map(p => jidToNumber(p.id));
-    if (!admins.includes(jidToNumber(sender)))
+    const lidMap = loadLidMappings(metadata);
+    const resolvedSender = resolveToJid(sender, lidMap);
+
+    if (!isUserAdmin(resolvedSender, metadata))
         return reply("❌ Only group admins can revoke the invite link.");
 
     await conn.groupRevokeInvite(from);
@@ -549,7 +587,6 @@ async (conn, mek, m, { from, isGroup, sender, reply }) => {
     await conn.sendMessage(from, { text: `✅ Invite link revoked. New link:\nhttps://chat.whatsapp.com/${newLink}` }, { quoted: mek });
 });
 
-// ─── List Group Admins ─────────────────────────────
 cmd({
     pattern: "admins",
     use: ".admins",
@@ -565,8 +602,6 @@ async (conn, mek, m, { from, isGroup, reply }) => {
     await conn.sendMessage(from, { text: `👑 Group Admins:\n${list}`, mentions: admins }, { quoted: mek });
 });
 
-// ─── Group Info ─────────────────────────────
-// ─── Group Info ─────────────────────────────
 cmd({
     pattern: "ginfo",
     alias: ["groupinfo"],
@@ -582,7 +617,6 @@ async (conn, mek, m, { from, isGroup, reply }) => {
     const adminCount = metadata.participants.filter(p => p.admin).length;
     const desc = metadata.desc || "No description set.";
 
-    // Attempt to fetch group profile picture
     let pfpUrl;
     try {
         pfpUrl = await conn.profilePictureUrl(from, 'image');
@@ -590,7 +624,6 @@ async (conn, mek, m, { from, isGroup, reply }) => {
         pfpUrl = null;
     }
 
-    // Decorative borders and icons
     const header = `╔═〘 *${metadata.subject}* 〙═╗`;
     const footer = `╚═══ Powered by 🔥 HANS BYTE V2 ═══╝`;
     const info = `
@@ -599,7 +632,6 @@ async (conn, mek, m, { from, isGroup, reply }) => {
 ⦿ *Admins:* ${adminCount}
 ⦿ *Description:* ${desc}`;
 
-    // Send either image with caption or plain text
     if (pfpUrl) {
         await conn.sendMessage(from, {
             image: { url: pfpUrl },
@@ -610,7 +642,6 @@ async (conn, mek, m, { from, isGroup, reply }) => {
     }
 });
 
-// ─── Hidetag ─────────────────────────────
 cmd({
     pattern: "hidetag",
     use: ".hidetag <message>",
@@ -619,13 +650,19 @@ cmd({
     filename: __filename
 }, async (conn, mek, m, { from, isGroup, sender, args, reply }) => {
     if (!isGroup) return reply("❌ Groups only!");
+    
     const metadata = await conn.groupMetadata(from);
+    const lidMap = loadLidMappings(metadata);
+    const resolvedSender = resolveToJid(sender, lidMap);
+
+    if (!isUserAdmin(resolvedSender, metadata))
+        return reply("❌ Only admins can use hidetag!");
+
     const text = args.join(" ").trim() || " ";
     const mentions = metadata.participants.map(p => p.id);
     await conn.sendMessage(from, { text, mentions }, { quoted: mek });
 });
 
-// ─── Tag Admins ─────────────────────────────
 cmd({
     pattern: "tagadmins",
     use: ".tagadmins",
@@ -640,116 +677,77 @@ cmd({
     await conn.sendMessage(from, { text, mentions: admins }, { quoted: mek });
 });
 
-// ─── SetWelcome Command ─────────────────────────────//
 cmd({
-  pattern: 'setwelcome',
-  use: '.setwelcome on/off',
-  desc: 'Enable or disable welcome/leave messages.',
-  category: 'group',
-  filename: __filename
+    pattern: 'setwelcome',
+    use: '.setwelcome on/off',
+    desc: 'Enable or disable welcome/leave messages.',
+    category: 'group',
+    filename: __filename
 },
-async (conn, mek, m, { args, reply, isAdmins, sender }) => {
-  // Helper: resolve real phone number even when `sender` is in @lid form
-  async function resolveNumber(jid) {
-    const [id, domain] = jid.split('@')
-    if (domain === 'lid') {
-      // fetch the group metadata for this chat
-      const chatId = m.key.remoteJid
-      const metadata = await conn.groupMetadata(chatId)
-      // find the participant whose lid matches
-      const p = metadata.participants.find(p => p.lid === jid)
-      if (p && p.jid) {
-        return p.jid.split('@')[0]    // e.g. "237650123456"
-      }
-      return id                      // fallback: numeric part
+async (conn, mek, m, { args, reply, sender, from, isGroup }) => {
+    if (!isGroup) return reply("❌ Group only!");
+    
+    const metadata = await conn.groupMetadata(from);
+    const lidMap = loadLidMappings(metadata);
+    const resolvedSender = resolveToJid(sender, lidMap);
+
+    if (!isUserAdmin(resolvedSender, metadata) && !isBotOwner(resolvedSender)) {
+        return reply('❌ Only group admins can toggle welcome messages.');
     }
-    // not a lid JID, just strip the domain
-    return id
-  }
 
-  // 1) get the numeric phone number of the sender
-  const senderNum = await resolveNumber(sender)
+    const option = (args[0] || '').toLowerCase();
+    if (option !== 'on' && option !== 'off') {
+        return reply('⚙️ Use `.setwelcome on` or `.setwelcome off`');
+    }
 
-  // 2) check bot owner
-  const isBotOwner = senderNum === config.OWNER_NUM
-
-  console.log({ isAdmins, isBotOwner, senderNum, owner: config.OWNER_NUM })
-
-  // 3) only admins or bot owner may toggle
-  if (!(isAdmins)) {
-    return reply('❌ Only group admins can toggle welcome messages.')
-  }
-
-  // 4) validate argument
-  const option = (args[0] || '').toLowerCase()
-  if (option !== 'on' && option !== 'off') {
-    return reply('⚙️ Use `.setwelcome on` or `.setwelcome off`')
-  }
-
-  // 5) update config.json
-  try {
-    const configPath = path.join(__dirname, 'config.json')  // adjust path if needed
-    const raw = fs.readFileSync(configPath, 'utf8')
-    const updated = raw.replace(
-      /"welcome"\s*:\s*"(true|false)"/,
-      `"welcome": "${option === 'on'}"`
-    )
-    fs.writeFileSync(configPath, updated, 'utf8')
-
-    reply(`✅ Welcome messages are now *${option.toUpperCase()}*`)
-  } catch (e) {
-    console.error('❌ Failed to update config:', e)
-    reply('❌ Failed to update welcome setting.')
-  }
-})
-//============ SPAM COMMAND ============
-
-cmd({
-  pattern: "spam",
-  react: "⚠️",
-  desc: "Spam a message multiple times with warnings",
-  category: "group",
-  use: ".spam <count> <text>",
-  filename: __filename
-},
-async (conn, mek, m, { from, sender, args, reply, isAdmins }) => {
-  // Extract number from sender JID (e.g., 2376xxxxxxx@lid)
-  const senderJid = sender;
-  const senderNumber = senderJid.split('@')[0];
-
-  // Independent checks
-  const isBotOwner = config.OWNER_NUM.includes(senderNumber);
-  const isGroupAdmin = isAdmins === true;
-
-  // Log all relevant variables
-  console.log("== SPAM CMD DEBUG ==");
-  console.log("Sender:", sender);
-  console.log("Sender Number:", senderNumber);
-  console.log("isAdmins:", isAdmins);
-  console.log("isBotOwner:", isBotOwner);
-  console.log("isGroupAdmin:", isGroupAdmin);
-
-  // Enforce independent check
-  if (!isBotOwner && !isGroupAdmin)
-    return reply("⚠️ Only group admins or bot owner can use this command.");
-
-  if (args.length < 2)
-    return reply("Usage: .spam <count> <text>");
-
-  let count = parseInt(args[0]);
-  if (isNaN(count) || count < 1)
-    return reply("⚠️ Please provide a valid number greater than 0.");
-  if (count > 10)
-    return reply("⚠️ Spam count too high! Max is 10.");
-
-  let text = args.slice(1).join(" ");
-  if (!text)
-    return reply("⚠️ Please provide a message to spam.");
-
-  for (let i = 0; i < count; i++) {
-    await conn.sendMessage(from, { text });
-    await new Promise(resolve => setTimeout(resolve, 300)); // Delay between messages
-  }
+    try {
+        const configPath = path.join(__dirname, '../config.json');
+        const raw = fs.readFileSync(configPath, 'utf8');
+        const updated = raw.replace(
+            /"welcome"\s*:\s*"(true|false)"/,
+            `"welcome": "${option === 'on'}"`
+        );
+        fs.writeFileSync(configPath, updated, 'utf8');
+        reply(`✅ Welcome messages are now *${option.toUpperCase()}*`);
+    } catch (e) {
+        console.error('❌ Failed to update config:', e);
+        reply('❌ Failed to update welcome setting.');
+    }
 });
 
+cmd({
+    pattern: "spam",
+    react: "⚠️",
+    desc: "Spam a message multiple times with warnings",
+    category: "group",
+    use: ".spam <count> <text>",
+    filename: __filename
+},
+async (conn, mek, m, { from, sender, args, reply, isGroup }) => {
+    const lidMap = isGroup ? loadLidMappings(await conn.groupMetadata(from)) : new Map();
+    const resolvedSender = resolveToJid(sender, lidMap);
 
+    const isOwner = isBotOwner(resolvedSender);
+    const isAdmin = isGroup ? isUserAdmin(resolvedSender, await conn.groupMetadata(from)) : false;
+
+    if (!isOwner && !isAdmin)
+        return reply("⚠️ Only group admins or bot owner can use this command.");
+
+    if (args.length < 2)
+        return reply("Usage: .spam <count> <text>");
+
+    let count = parseInt(args[0]);
+    if (isNaN(count) || count < 1)
+        return reply("⚠️ Please provide a valid number greater than 0.");
+    if (count > 10)
+        return reply("⚠️ Spam count too high! Max is 10.");
+
+    let text = args.slice(1).join(" ");
+    if (!text)
+        return reply("⚠️ Please provide a message to spam.");
+
+    for (let i = 0; i < count; i++) {
+        await conn.sendMessage(from, { text });
+        await new Promise(resolve => setTimeout(resolve, 300));
+    }
+});

@@ -16,7 +16,7 @@ async (conn, mek, m, { from, quoted, q, reply, sender }) => {
         await conn.sendMessage(from, { react: { text: '⏳', key: mek.key } });
 
         // Fetch IP details
-        const url = `https://api.giftedtech.web.id/api/stalk/ipstalk?apikey=gifted_api_6kuv56877d&address=${encodeURIComponent(q)}`;
+        const url = `https://api.giftedtech.co.ke/api/stalk/ipstalk?apikey=gifted_api_6kuv56877d&address=${encodeURIComponent(q)}`;
         const res = await fetch(url);
         const data = await res.json();
 

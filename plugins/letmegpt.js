@@ -15,7 +15,7 @@ cmd({
     const prompt = q ? q : `Hello, I am ${pushname}`;
 
     // Call LetMeGPT API
-    const api = `https://api.giftedtech.web.id/api/ai/letmegpt?apikey=gifted_api_6kuv56877d&q=${encodeURIComponent(prompt)}`;
+    const api = `https://api.giftedtech.co.ke/api/ai/letmegpt?apikey=gifted_api_6kuv56877d&q=${encodeURIComponent(prompt)}`;
     const res = await axios.get(api);
     const json = res.data;
 

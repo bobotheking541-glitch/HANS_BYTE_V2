@@ -13,7 +13,7 @@ cmd({
         if (!q) return reply("❌ *Please provide a website URL to screenshot.*\n\nExample:\n.ssweb https://hans-web.vercel.app");
 
         // Encode the URL parameter
-        const apiUrl = `https://api.giftedtech.web.id/api/tools/ssweb?apikey=gifted_api_6kuv56877d&url=${encodeURIComponent(q)}`;
+        const apiUrl = `https://api.giftedtech.co.ke/api/tools/ssweb?apikey=gifted_api_6kuv56877d&url=${encodeURIComponent(q)}`;
         const res = await fetch(apiUrl);
 
         // The API returns an image directly, so we just send it as image message

@@ -39,7 +39,7 @@ cmd({
     const userQuery = `Hey there! I’m ${pushname} . Whatever I say—no matter how random, weird, or short—turn it into an incredible story. Make it long, thrilling, and unforgettable, filled with adventure, emotion, and vivid details that draw the reader in. Don’t hold back—make every sentence epic, exciting, and immersive and make use of emojis to spice up all. Here’s what I want to share:
 ${q} ❓`;
 
-    const apiUrl = `https://api.giftedtech.web.id/api/ai/geminiai?apikey=gifted_api_6kuv56877d&q=${encodeURIComponent(userQuery)}`;
+    const apiUrl = `https://api.giftedtech.co.ke/api/ai/geminiai?apikey=gifted_api_6kuv56877d&q=${encodeURIComponent(userQuery)}`;
     const response = await axios.get(apiUrl);
 
     const aiResponse = response.data?.result;

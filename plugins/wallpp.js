@@ -23,7 +23,7 @@ cmd({
 
         reply("⚡ *Fetching stunning wallpapers...* ✨");
 
-        const apiUrl = `https://api.giftedtech.web.id/api/search/wallpaper?apikey=gifted_api_6kuv56877d&query=${encodeURIComponent(q)}`;
+        const apiUrl = `https://api.giftedtech.co.ke/api/search/wallpaper?apikey=gifted_api_6kuv56877d&query=${encodeURIComponent(q)}`;
         const res = await axios.get(apiUrl);
         const data = res.data;
 

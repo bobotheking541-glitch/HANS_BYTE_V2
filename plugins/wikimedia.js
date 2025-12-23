@@ -15,7 +15,7 @@ cmd({
 
     reply("🔍 *Fetching Wikimedia images...*");
 
-    const apiUrl = `https://api.giftedtech.web.id/api/search/wikimedia?apikey=gifted_api_6kuv56877d&title=${encodeURIComponent(q)}`;
+    const apiUrl = `https://api.giftedtech.co.ke/api/search/wikimedia?apikey=gifted_api_6kuv56877d&title=${encodeURIComponent(q)}`;
     const { data } = await axios.get(apiUrl);
 
     if (!data.success || !Array.isArray(data.results) || data.results.length === 0) {

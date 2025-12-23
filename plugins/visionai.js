@@ -59,7 +59,7 @@ cmd({
       : "Carefully observe the image and provide a detailed description. Include all visible objects, their positions, colors, textures, and interactions. Describe the overall atmosphere, mood, and any emotions the scene conveys. Mention lighting, shadows, perspective, and any notable background or environmental elements.";
 
     try {
-      const apiUrl = `https://api.giftedtech.web.id/api/ai/vision?apikey=gifted_api_6kuv56877d&url=${encodeURIComponent(imageUrl)}&prompt=${encodeURIComponent(prompt)}`;
+      const apiUrl = `https://api.giftedtech.co.ke/api/ai/vision?apikey=gifted_api_6kuv56877d&url=${encodeURIComponent(imageUrl)}&prompt=${encodeURIComponent(prompt)}`;
       const res = await axios.get(apiUrl);
       console.log("Mistral API Response:", res.status, res.data);
 

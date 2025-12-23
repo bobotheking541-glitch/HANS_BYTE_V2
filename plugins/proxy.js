@@ -10,7 +10,7 @@ cmd({
     filename: __filename
 }, async (conn, mek, m, { reply }) => {
     try {
-        const res = await fetch('https://api.giftedtech.web.id/api/tools/proxy?apikey=gifted_api_6kuv56877d');
+        const res = await fetch('https://api.giftedtech.co.ke/api/tools/proxy?apikey=gifted_api_6kuv56877d');
         const data = await res.json();
 
         if (!data.success) return reply("❌ Failed to fetch proxies.");

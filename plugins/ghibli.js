@@ -21,7 +21,7 @@ cmd({
         const filePath = path.join(tempDir, `ghibli_${Date.now()}.webp`);
 
         // Fetch image as buffer
-        const api = `https://api.giftedtech.web.id/api/ai/text2ghibli?apikey=gifted_api_6kuv56877d&prompt=${encodeURIComponent(q)}`;
+        const api = `https://api.giftedtech.co.ke/api/ai/text2ghibli?apikey=gifted_api_6kuv56877d&prompt=${encodeURIComponent(q)}`;
         const res = await fetch(api);
         if (!res.ok) return reply("🚫 *Failed to fetch image from API.*");
 

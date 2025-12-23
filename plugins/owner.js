@@ -131,13 +131,25 @@ cmd({
     const resolvedIsOwner = isOwnerResolved(sender, OWNERS, maps);
     if (!resolvedIsOwner) return reply("🚫 Owner only command!");
   }
-  let groups = Object.values(conn.chats).filter(c => c.id.endsWith("@g.us"));
+
+  // Safe fetching of groups
+  let groups = [];
+  if (conn.store && conn.store.chats) {
+    groups = Array.from(conn.store.chats.values()).filter(c => c.id.endsWith("@g.us"));
+  } else if (conn.chats) {
+    groups = Object.values(conn.chats).filter(c => c.id.endsWith("@g.us"));
+  }
+
+  if (!groups.length) return reply("❌ No groups found.");
+
   let txt = "📂 *Groups List:*\n\n";
   groups.forEach((g, i) => {
     txt += `${i + 1}. ${g.name || "Unnamed"}\n${g.id}\n\n`;
   });
-  reply(txt || "❌ No groups found.");
+
+  reply(txt);
 });
+
 
 // ⚙️ Exec (Shell Command)
 cmd({

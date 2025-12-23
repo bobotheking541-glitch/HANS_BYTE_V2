@@ -6,11 +6,11 @@ function convertToBool(text, fault = 'true') {
 }
 
 module.exports = {
-    SESSION_ID: process.env.SESSION_ID || "tmVVEaYB#GPbKL_0EkMxl4vUAeKAa5LT6IL2X5ESQjUkuJymDH6A",
-    OWNER_NUM: process.env.OWNER_NUM || "237696900612", // your number
+    SESSION_ID: process.env.SESSION_ID || "UukETbrb#s0rSQ2lSD75TTmrw2yFYY0BtNmTiLJHhS2TsH2bMOFU",
+    OWNER_NUM: process.env.OWNER_NUM || "237694668970", // your number
     OWNER_NAME: process.env.OWNER_NAME || "HANS TECH",
     BOT_NAME: process.env.BOT_NAME || "HANS BYTE V2",
-    SUDO: process.env.SUDO || "237696900612",
+    SUDO: process.env.SUDO || "237694668970",
     CUSTOM_REACT: process.env.CUSTOM_REACT || "false",
     PREFIX: process.env.PREFIX || "!",
     CUSTOM_REACT_EMOJIS: process.env.CUSTOM_REACT_EMOJIS || "💝,💖,💗,❤️‍🔥,❤️‍🩹,❤️,🩷,🧡,💛,💚,💙,🩵,💜,🤎,🖤,🩶,🤍",

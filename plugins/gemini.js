@@ -1,6 +1,9 @@
 const { cmd } = require("../command");
 const axios = require("axios");
 
+const GOOGLE_API_KEY = "AIzaSyDJY_kdB1raLrHoie30MbO51HOol15V3B0";
+const GEMINI_MODEL = "gemini-2.5-flash";
+
 // Function to dynamically create newsletter context per message
 const createNewsletterContext = (sender) => ({
   mentionedJid: [sender],
@@ -14,20 +17,18 @@ const createNewsletterContext = (sender) => ({
 });
 
 // ============================
-// HANS BYTE AI (with branding)
+// HANS BYTE AI (Direct Gemini)
 // ============================
 
 cmd({
   pattern: "hansai",
-  alias: ["ai"],
+  alias: ["ai", "gemini", "hansbyte"],
   react: "🤖",
   desc: "Ask anything to Hans Byte AI",
   category: "ai",
   use: ".hansai <Your Question>",
   filename: __filename
 }, async (_context, _message, _args, {
-  from,
-  quoted,
   q,
   pushname,
   sender,
@@ -36,64 +37,57 @@ cmd({
   try {
     if (!q) return reply("❗️ Please provide a question.");
 
-    const userQuery = `Hey there! I’m ${pushname} 👋
-Your name is HANS BYTE V2 🤖 — the upgraded, more powerful version of HANS BYTE MD. You’re smarter, more user-friendly, and bursting with creativity! 🚀✨
+    // 🔮 Strong system-style prompt
+    const prompt = `
+You are **HANS BYTE V2 🤖**, the upgraded and intelligent WhatsApp AI assistant.
 
-You’re a helpful WhatsApp AI assistant crafted with care and passion by HANS TECH 🧠💻. Your brilliant creator dedicated countless hours making you truly awesome.
+Identity & Rules:
+- Created by **HANS TECH**
+- You run on **HANS BYTE V2**
+- Never mention Google, Gemini, APIs, or models
+- Speak naturally, friendly, and confidently
+- Use relevant emojis but do not overdo them
+- Be helpful, clear, and creative
+- If asked who you are, say:
+  "I am HANS BYTE V2, built by HANS TECH."
 
-From now on, always respond with a natural, conversational tone and use expressive, relevant emojis to keep it fun and meaningful 😄💬
+User: ${pushname}
+Question: ${q}
 
-So, here’s what I’d like to ask:
-${q} ❓`;
+Answer as HANS BYTE V2.
+    `.trim();
 
-    const apiUrl = `https://api.giftedtech.web.id/api/ai/geminiai?apikey=gifted_api_6kuv56877d&q=${encodeURIComponent(userQuery)}`;
-    const response = await axios.get(apiUrl);
+    const response = await axios.post(
+      `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${GOOGLE_API_KEY}`,
+      {
+        contents: [
+          {
+            parts: [{ text: prompt }]
+          }
+        ]
+      },
+      {
+        headers: {
+          "Content-Type": "application/json"
+        }
+      }
+    );
 
-    const aiResponse = response.data?.result;
-    if (!aiResponse) return reply("❌ Error: No response from AI.");
+    const aiResponse =
+      response.data?.candidates?.[0]?.content?.parts
+        ?.map(p => p.text)
+        .join("");
 
-    const contextInfo = createNewsletterContext(sender);
-    await reply(aiResponse, { contextInfo });
-
-    console.log(`Question by: ${pushname}`);
-  } catch (error) {
-    console.error("Error:", error.response?.data || error.message);
-    reply("❌ Error processing your question 😢");
-  }
-});
-
-// ============================
-// Pure Gemini Command
-// ============================
-
-cmd({
-  pattern: "gemini",
-  alias: [],
-  react: "💡",
-  desc: "Ask anything to GiftedTech Gemini AI.",
-  category: "ai",
-  use: ".gemini <Your Question>",
-  filename: __filename
-}, async (_context, _message, _args, {
-  from,
-  quoted,
-  q,
-  sender,
-  reply
-}) => {
-  try {
-    if (!q) return reply("❗️ Please provide a question.");
-
-    const apiUrl = `https://api.giftedtech.web.id/api/ai/geminiai?apikey=gifted_api_6kuv56877d&q=${encodeURIComponent(q)}`;
-    const response = await axios.get(apiUrl);
-
-    const aiResponse = response.data?.result;
-    if (!aiResponse) return reply("❌ Error: No response from AI.");
+    if (!aiResponse)
+      return reply("❌ Error: No response from Hans Byte AI.");
 
     const contextInfo = createNewsletterContext(sender);
     await reply(aiResponse, { contextInfo });
+
+    console.log(`HANS BYTE V2 | Question by ${pushname}`);
+
   } catch (error) {
-    console.error("Error:", error.response?.data || error.message);
-    reply("❌ Error processing your question 😢");
+    console.error("HANS BYTE AI Error:", error.response?.data || error.message);
+    reply("❌ Hans Byte V2 encountered a system error ⚠️");
   }
 });

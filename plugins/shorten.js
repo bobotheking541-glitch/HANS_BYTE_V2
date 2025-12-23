@@ -16,7 +16,7 @@ cmd({
         if (!q) return reply("❌ Please provide a URL to shorten.\nExample: tinyurl https://example.com");
 
         const url = encodeURIComponent(q);
-        const res = await fetch(`https://api.giftedtech.web.id/api/tools/tinyurl?apikey=${API_KEY}&url=${url}`);
+        const res = await fetch(`https://api.giftedtech.co.ke/api/tools/tinyurl?apikey=${API_KEY}&url=${url}`);
         const data = await res.json();
 
         if (!data.success || !data.result) return reply("❌ Failed to shorten URL.");
@@ -48,7 +48,7 @@ cmd({
         if (!q) return reply("❌ Please provide a URL.\nExample: cleanuri https://example.com");
 
         const url = encodeURIComponent(q);
-        const res = await fetch(`https://api.giftedtech.web.id/api/tools/cleanuri?apikey=${API_KEY}&url=${url}`);
+        const res = await fetch(`https://api.giftedtech.co.ke/api/tools/cleanuri?apikey=${API_KEY}&url=${url}`);
         const data = await res.json();
 
         if (!data.success || !data.result) return reply("❌ Failed to shorten URL.");
@@ -80,7 +80,7 @@ cmd({
         if (!q) return reply("❌ Please provide a URL.\nExample: vurl https://example.com");
 
         const url = encodeURIComponent(q);
-        const res = await fetch(`https://api.giftedtech.web.id/api/tools/vurl?apikey=${API_KEY}&url=${url}`);
+        const res = await fetch(`https://api.giftedtech.co.ke/api/tools/vurl?apikey=${API_KEY}&url=${url}`);
         const data = await res.json();
 
         if (!data.success || !data.result) return reply("❌ Failed to shorten URL.");

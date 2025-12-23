@@ -439,7 +439,7 @@ cmd({
         if (!q) return reply("❌ Please provide a character name. Example: charquote light yagami");
 
         const character = encodeURIComponent(q);
-        const res = await fetch(`https://api.giftedtech.web.id/api/anime/char-quotes?apikey=gifted_api_6kuv56877d&character=${character}`);
+        const res = await fetch(`https://api.giftedtech.co.ke/api/anime/char-quotes?apikey=gifted_api_6kuv56877d&character=${character}`);
         const data = await res.json();
 
         if (!data.success || !data.result) return reply("❌ Could not fetch quote for this character.");

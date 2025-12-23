@@ -1,4 +1,4 @@
-const { cmd, commands } = require('../command');
+const { cmd } = require('../command');
 const axios = require('axios');
 
 cmd(
@@ -6,7 +6,7 @@ cmd(
     pattern: "claude",
     alias: ["claudeai", "sonnet", "ai3"],
     react: "🧠",
-    desc: "Get AI responses from Claude AI API.",
+    desc: "Chat with Claude AI (clean, controlled, no drama)",
     category: "ai",
     filename: __filename,
   },
@@ -14,13 +14,11 @@ cmd(
     robin,
     mek,
     m,
-    { from, quoted, body, isCmd, command, args, q, isGroup, sender, reply }
+    { from, sender, q, reply }
   ) => {
     try {
-      // Default message if no input
-      q = q || "Hey";
+      q = q || "Hi Claude";
 
-      // Newsletter context info
       const newsletterContext = {
         mentionedJid: [sender],
         forwardingScore: 1000,
@@ -32,29 +30,40 @@ cmd(
         },
       };
 
-      // API URL for Claude AI
-      let apiUrl = `https://apis.davidcyriltech.my.id/ai/claudeSonnet?text=${encodeURIComponent(q)}`;
+      // ✅ NORMAL QUERY — no identity coercion
+      const apiUrl = `https://www.itzpire.my.id/ai/claude?q=${encodeURIComponent(q)}`;
+      const { data } = await axios.get(apiUrl);
 
-      // Fetch AI response from Claude API
-      let { data } = await axios.get(apiUrl);
-
-      if (!data || !data.response) {
-        return reply("❌ Claude AI response error! Please try again.");
+      if (!data || !data.result) {
+        return reply("❌ Claude AI failed to respond.");
       }
 
-      // Send Claude AI response with newsletter context
+      // 🧼 CLEAN + DISCLAIMER CONTROL
+      let cleanText = data.result
+        // spacing fixes
+        .replace(/([a-z])([A-Z])/g, "$1 $2")
+        .replace(/([a-zA-Z])([0-9])/g, "$1 $2")
+        .replace(/([.!?])([A-Za-z])/g, "$1 $2")
+        .replace(/-1$/g, "")
+        .replace(/\s+/g, " ")
+        // remove identity disclaimer paragraphs
+        .replace(/I'm Claude.*?systems\./gi, "")
+        .replace(/I was developed.*?technology\./gi, "")
+        .trim();
+
       await robin.sendMessage(
         from,
-        { 
-          text: `🧠 **Claude AI:**\n\n${data.response}`,
+        {
+          text:
+`${cleanText}`,
           contextInfo: newsletterContext,
         },
         { quoted: mek }
       );
 
-    } catch (e) {
-      console.error(e);
-      reply(`❌ Error: ${e.message}`);
+    } catch (err) {
+      console.error(err);
+      reply(`❌ Error: ${err.message}`);
     }
   }
 );

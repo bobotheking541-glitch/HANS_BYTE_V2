@@ -16,7 +16,7 @@ cmd({
         if (!q) return reply("❌ Please provide a SnackVideo link.\nExample: snackdl https://www.snackvideo.com/...");
 
         const url = encodeURIComponent(q);
-        const res = await fetch(`https://api.giftedtech.web.id/api/download/snackdl?apikey=${API_KEY}&url=${url}`);
+        const res = await fetch(`https://api.giftedtech.co.ke/api/download/snackdl?apikey=${API_KEY}&url=${url}`);
         const data = await res.json();
 
         if (!data.success || !data.result) return reply("❌ Failed to fetch video.");
