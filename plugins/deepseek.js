@@ -40,7 +40,7 @@ cmd(
       let { data } = await axios.get(apiUrl);
 
       if (!data || !data.response) {
-        return reply("❌ AI response error! Please try again.");
+        return safeReply(conn, mek.key.remoteJid, "❌ AI response error! Please try again.");
       }
 
       // Send AI response with newsletter context
@@ -58,7 +58,7 @@ cmd(
 
     } catch (e) {
       console.error(e);
-      reply(`❌ Error: ${e.message}`);
+      safeReply(conn, mek.key.remoteJid, `❌ Error: ${e.message}`);
     }
   }
 );

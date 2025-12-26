@@ -60,7 +60,7 @@ cmd(
       // Image URL (animated preferred)
       const imageUrl = (json.sprites && (json.sprites.animated || json.sprites.normal)) || null;
       if (!imageUrl) {
-        return reply('Image not found for this Pokémon.');
+        return safeReply(conn, mek.key.remoteJid, 'Image not found for this Pokémon.');
       }
 
       // Download image as buffer
@@ -101,7 +101,7 @@ cmd(
 
     } catch (e) {
       console.error(e);
-      reply(`❌ Error: ${e.message || e}`);
+      safeReply(conn, mek.key.remoteJid, `❌ Error: ${e.message || e}`);
     }
   }
 );

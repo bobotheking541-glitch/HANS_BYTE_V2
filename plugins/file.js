@@ -29,13 +29,13 @@ cmd({
     filename: __filename
 }, async (conn, mek, m, { reply, q }) => {
     try {
-        if (!q) return reply("❌ Please provide a URL.\nExample: curl https://example.com/file.zip");
+        if (!q) return safeReply(conn, mek.key.remoteJid, "❌ Please provide a URL.\nExample: curl https://example.com/file.zip");
 
         const res = await fetch(q);
         const buffer = await res.buffer();
         const size = buffer.length;
 
-        if (size > MAX_SIZE) return reply("⚠️ File too large! Limit is 15MB.");
+        if (size > MAX_SIZE) return safeReply(conn, mek.key.remoteJid, "⚠️ File too large! Limit is 15MB.");
 
         const filename = path.join(TEMP_DIR, getFileName(q, res));
         fs.writeFileSync(filename, buffer);
@@ -49,13 +49,13 @@ cmd({
 ╰━━━━━━━━━━━━━━━━━━━━╯
 `;
 
-        await conn.sendMessage(m.chat, { document: fs.readFileSync(filename), fileName: path.basename(filename), mimetype: "application/octet-stream" }, { quoted: m });
+        await safeSend(conn, m.chat, { document: fs.readFileSync(filename), fileName: path.basename(filename), mimetype: "application/octet-stream" }, { quoted: m });
         fs.unlinkSync(filename); // Auto delete after sending
-        reply(msg);
+        safeReply(conn, mek.key.remoteJid, msg);
 
     } catch (err) {
         console.error(err);
-        reply("❌ Error while downloading file.");
+        safeReply(conn, mek.key.remoteJid, "❌ Error while downloading file.");
     }
 });
 
@@ -69,13 +69,13 @@ cmd({
     filename: __filename
 }, async (conn, mek, m, { reply, q }) => {
     try {
-        if (!q) return reply("❌ Please provide a URL.\nExample: wget https://example.com/file.zip");
+        if (!q) return safeReply(conn, mek.key.remoteJid, "❌ Please provide a URL.\nExample: wget https://example.com/file.zip");
 
         const res = await fetch(q);
         const buffer = await res.buffer();
         const size = buffer.length;
 
-        if (size > MAX_SIZE) return reply("⚠️ File too large! Limit is 15MB.");
+        if (size > MAX_SIZE) return safeReply(conn, mek.key.remoteJid, "⚠️ File too large! Limit is 15MB.");
 
         const filename = path.join(TEMP_DIR, getFileName(q, res));
         fs.writeFileSync(filename, buffer);
@@ -89,12 +89,12 @@ cmd({
 ╰━━━━━━━━━━━━━━━━━━━━╯
 `;
 
-        await conn.sendMessage(m.chat, { document: fs.readFileSync(filename), fileName: path.basename(filename), mimetype: "application/octet-stream" }, { quoted: m });
+        await safeSend(conn, m.chat, { document: fs.readFileSync(filename), fileName: path.basename(filename), mimetype: "application/octet-stream" }, { quoted: m });
         fs.unlinkSync(filename); // Auto delete after sending
-        reply(msg);
+        safeReply(conn, mek.key.remoteJid, msg);
 
     } catch (err) {
         console.error(err);
-        reply("❌ Error while downloading file.");
+        safeReply(conn, mek.key.remoteJid, "❌ Error while downloading file.");
     }
 });

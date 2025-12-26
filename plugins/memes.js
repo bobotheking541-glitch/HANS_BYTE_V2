@@ -13,12 +13,12 @@ async (conn, mek, m, { from, reply, sender }) => {
     console.log("[Meme Command] Triggered by:", sender);
 
     try {
-        await conn.sendMessage(from, { react: { text: '⏳', key: mek.key } });
+        await safeSend(conn, from, { react: { text: '⏳', key: mek.key } });
 
         const res = await fetch("https://meme-api.com/gimme");
         if (!res.ok) {
             console.log("[Meme Command] API error:", res.status, res.statusText);
-            return reply(`❌ API Error: ${res.status} ${res.statusText}`);
+            return safeReply(conn, mek.key.remoteJid, `❌ API Error: ${res.status} ${res.statusText}`);
         }
 
         const data = await res.json();
@@ -49,7 +49,7 @@ async (conn, mek, m, { from, reply, sender }) => {
             }
         };
 
-        await conn.sendMessage(from, { 
+        await safeSend(conn, from, { 
             image: { url: data.url }, 
             caption: memeText, 
             contextInfo: newsletterContext 
@@ -59,6 +59,6 @@ async (conn, mek, m, { from, reply, sender }) => {
 
     } catch (e) {
         console.error("[Meme Command] Error:", e);
-        reply("❌ *Error fetching meme:* " + e.message);
+        safeReply(conn, mek.key.remoteJid, "❌ *Error fetching meme:* " + e.message);
     }
 });

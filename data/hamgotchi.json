@@ -1,5 +1,36 @@
 {
-  "users": {},
+  "users": {
+    "109341965291754@lid": {
+      "jid": "109341965291754@lid",
+      "username": "The Byte",
+      "xp": 12,
+      "level": 1,
+      "coins": 52,
+      "pet": {
+        "name": "Ham",
+        "species": "Crimson Ham",
+        "rarity": "Mythic",
+        "happiness": 80,
+        "energy": 100,
+        "level": 1,
+        "xp": 12,
+        "evolved": false,
+        "createdAt": 1766701746836
+      },
+      "session": {
+        "lastMine": 1766701798942,
+        "lastFeed": 0,
+        "lastPlay": 0,
+        "lastExplore": 0,
+        "lastMob": 0,
+        "lastFinalTrial": 0,
+        "lastGift": 0
+      },
+      "inventory": {},
+      "achievements": [],
+      "createdAt": 1766701746836
+    }
+  },
   "mobs": {},
   "meta": {
     "startedAt": 1766459467758

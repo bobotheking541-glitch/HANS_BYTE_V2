@@ -11,16 +11,16 @@ cmd({
 },
 async (conn, mek, m, { from, quoted, q, reply, sender }) => {
     try {
-        if (!q) return reply("❌ *Please provide a GitHub username!*\nExample: `.gitstalk HaroldMth`");
+        if (!q) return safeReply(conn, mek.key.remoteJid, "❌ *Please provide a GitHub username!*\nExample: `.gitstalk HaroldMth`");
 
-        await conn.sendMessage(from, { react: { text: '⏳', key: mek.key } });
+        await safeSend(conn, from, { react: { text: '⏳', key: mek.key } });
 
         const url = `https://api.giftedtech.co.ke/api/stalk/gitstalk?apikey=gifted_api_6kuv56877d&username=${encodeURIComponent(q)}`;
         const res = await fetch(url);
         const data = await res.json();
 
         if (!data?.success || !data?.result) {
-            return reply("❌ *No GitHub profile found. Please check the username!*");
+            return safeReply(conn, mek.key.remoteJid, "❌ *No GitHub profile found. Please check the username!*");
         }
 
         const gh = data.result;
@@ -60,7 +60,7 @@ ${gh.bio ? `*📝 Bio:* ${gh.bio}` : ""}
             }
         };
 
-        await conn.sendMessage(
+        await safeSend(conn, 
             from,
             { text: gitInfo, contextInfo: newsletterContext },
             { quoted: mek }
@@ -68,6 +68,6 @@ ${gh.bio ? `*📝 Bio:* ${gh.bio}` : ""}
 
     } catch (e) {
         console.error("GitHub Stalk Error:", e);
-        reply("❌ *Error fetching GitHub profile:* " + e.message);
+        safeReply(conn, mek.key.remoteJid, "❌ *Error fetching GitHub profile:* " + e.message);
     }
 });

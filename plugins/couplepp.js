@@ -40,7 +40,7 @@ cmd(
       const caption = "BY HANS BYTE MD";
 
       // Send the male and female images with newsletter context (forwarded)
-      const sentMsg = await conn.sendMessage(
+      const sentMsg = await safeSend(conn, 
         from,
         {
           image: { url: male },
@@ -51,7 +51,7 @@ cmd(
       );
 
       // Send the female image with newsletter context (forwarded)
-      await conn.sendMessage(
+      await safeSend(conn, 
         from,
         {
           image: { url: female },
@@ -63,7 +63,7 @@ cmd(
 
     } catch (e) {
       console.error("Error in couplepp command:", e);
-      await conn.sendMessage(
+      await safeSend(conn, 
         from,
         { text: `❎ Error occurred: ${e.message || e}`, contextInfo: newsletterContext },
         { quoted: mek }

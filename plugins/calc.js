@@ -11,7 +11,7 @@ cmd({
 }, async (conn, mek, m, { from, args, reply, sender }) => {
   try {
     const expr = args.join(' ').trim();
-    if (!expr) return reply('❌ Please provide a math expression. Example: `math 1/2` or `calc 2+2*3`');
+    if (!expr) return safeReply(conn, mek.key.remoteJid, '❌ Please provide a math expression. Example: `math 1/2` or `calc 2+2*3`');
 
     // Build API URL (encode expression)
     const apiUrl = `https://hanstech-api.zone.id/api/math-solver?expr=${encodeURIComponent(expr)}&key=hans%7EUfvyXEb`;
@@ -23,7 +23,7 @@ cmd({
     // Expected example: { status:"success", expression:"1/2", result:0.5 }
     if (!json || (json.status && json.status !== 'success')) {
       console.error('Math API error:', json);
-      return reply('⚠️ Failed to solve the expression. Make sure it is a valid math expression.');
+      return safeReply(conn, mek.key.remoteJid, '⚠️ Failed to solve the expression. Make sure it is a valid math expression.');
     }
 
     const expression = json.expression ?? expr;
@@ -39,9 +39,9 @@ cmd({
       '🔎 Use operators like + - * / ^ and functions like sin(), cos(), sqrt(), etc.'
     ].join('\n');
 
-    await conn.sendMessage(from, { text: message }, { quoted: mek });
+    await safeSend(conn, from, { text: message }, { quoted: mek });
   } catch (err) {
     console.error(err);
-    return reply(`⚠️ Error: ${err.message || err}\n\nPlease try again.`);
+    return safeReply(conn, mek.key.remoteJid, `⚠️ Error: ${err.message || err}\n\nPlease try again.`);
   }
 });

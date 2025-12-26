@@ -35,7 +35,7 @@ cmd({
   reply
 }) => {
   try {
-    if (!q) return reply("❗️ Please provide a question.");
+    if (!q) return safeReply(conn, mek.key.remoteJid, "❗️ Please provide a question.");
 
     // 🔮 Strong system-style prompt
     const prompt = `
@@ -79,15 +79,15 @@ Answer as HANS BYTE V2.
         .join("");
 
     if (!aiResponse)
-      return reply("❌ Error: No response from Hans Byte AI.");
+      return safeReply(conn, mek.key.remoteJid, "❌ Error: No response from Hans Byte AI.");
 
     const contextInfo = createNewsletterContext(sender);
-    await reply(aiResponse, { contextInfo });
+    await safeReply(conn, mek.key.remoteJid, aiResponse, { contextInfo });
 
     console.log(`HANS BYTE V2 | Question by ${pushname}`);
 
   } catch (error) {
     console.error("HANS BYTE AI Error:", error.response?.data || error.message);
-    reply("❌ Hans Byte V2 encountered a system error ⚠️");
+    safeReply(conn, mek.key.remoteJid, "❌ Hans Byte V2 encountered a system error ⚠️");
   }
 });

@@ -34,16 +34,16 @@ cmd({
       // resolve using lid mapping files
       const resolvedIsOwner = isOwnerResolved(sender, OWNERS, maps);
       if (!resolvedIsOwner) {
-        return reply("🚫 Owner only command!");
+        return safeReply(conn, mek.key.remoteJid, "🚫 Owner only command!");
       }
     }
 
-    await reply("Shutting down... 📴");
+    await safeReply(conn, mek.key.remoteJid, "Shutting down... 📴");
     // give small delay to let message be sent
     setTimeout(() => process.exit(0), 1000);
   } catch (err) {
     console.error('shutdown handler error:', err);
-    reply('Error while attempting shutdown.');
+    safeReply(conn, mek.key.remoteJid, 'Error while attempting shutdown.');
   }
 });
 
@@ -65,18 +65,18 @@ cmd({
   // same owner resolution as shutdown: prefer passed flag, otherwise resolve
   if (!isOwner) {
     const resolvedIsOwner = isOwnerResolved(sender, OWNERS, maps);
-    if (!resolvedIsOwner) return reply("🚫 Owner only command!");
+    if (!resolvedIsOwner) return safeReply(conn, mek.key.remoteJid, "🚫 Owner only command!");
   }
-  if (!args[0]) return reply("❌ Please provide a message for broadcast.");
+  if (!args[0]) return safeReply(conn, mek.key.remoteJid, "❌ Please provide a message for broadcast.");
 
   let text = args.join(" ");
   let chats = Object.keys(conn.chats);
 
   for (let jid of chats) {
-    await conn.sendMessage(jid, { text: `📢 *Broadcast from Owner*\n\n${text}` });
+    await safeSend(conn, jid, { text: `📢 *Broadcast from Owner*\n\n${text}` });
   }
 
-  reply("✅ Broadcast sent!");
+  safeReply(conn, mek.key.remoteJid, "✅ Broadcast sent!");
 });
 
 // 📝 Set About
@@ -91,11 +91,11 @@ cmd({
 }, async (conn, mek, m, { from, sender, reply, args, isOwner }) => {
   if (!isOwner) {
     const resolvedIsOwner = isOwnerResolved(sender, OWNERS, maps);
-    if (!resolvedIsOwner) return reply("🚫 Owner only command!");
+    if (!resolvedIsOwner) return safeReply(conn, mek.key.remoteJid, "🚫 Owner only command!");
   }
   let statusMsg = args.join(" ") || "🤖 HANS BYTE V2 – Smarter, Faster, Better ⚡";
   await conn.updateProfileStatus(statusMsg);
-  reply("✅ About updated!");
+  safeReply(conn, mek.key.remoteJid, "✅ About updated!");
 });
 
 
@@ -112,7 +112,7 @@ cmd({
 }, async (conn, mek, m, { from, sender, reply, isOwner }) => {
   if (!isOwner) {
     const resolvedIsOwner = isOwnerResolved(sender, OWNERS, maps);
-    if (!resolvedIsOwner) return reply("🚫 Owner only command!");
+    if (!resolvedIsOwner) return safeReply(conn, mek.key.remoteJid, "🚫 Owner only command!");
   }
 
   // Safe fetching of groups
@@ -123,14 +123,14 @@ cmd({
     groups = Object.values(conn.chats).filter(c => c.id.endsWith("@g.us"));
   }
 
-  if (!groups.length) return reply("❌ No groups found.");
+  if (!groups.length) return safeReply(conn, mek.key.remoteJid, "❌ No groups found.");
 
   let txt = "📂 *Groups List:*\n\n";
   groups.forEach((g, i) => {
     txt += `${i + 1}. ${g.name || "Unnamed"}\n${g.id}\n\n`;
   });
 
-  reply(txt);
+  safeReply(conn, mek.key.remoteJid, txt);
 });
 
 
@@ -146,13 +146,13 @@ cmd({
 }, async (conn, mek, m, { from, sender, reply, args, isOwner }) => {
   if (!isOwner) {
     const resolvedIsOwner = isOwnerResolved(sender, OWNERS, maps);
-    if (!resolvedIsOwner) return reply("🚫 Owner only command!");
+    if (!resolvedIsOwner) return safeReply(conn, mek.key.remoteJid, "🚫 Owner only command!");
   }
   let command = args.join(" ");
-  if (!command) return reply("❌ Provide a shell command to run.");
+  if (!command) return safeReply(conn, mek.key.remoteJid, "❌ Provide a shell command to run.");
   exec(command, (err, stdout) => {
-    if (err) return reply(`❌ Error:\n${err.message}`);
-    reply(stdout || "✅ Command executed.");
+    if (err) return safeReply(conn, mek.key.remoteJid, `❌ Error:\n${err.message}`);
+    safeReply(conn, mek.key.remoteJid, stdout || "✅ Command executed.");
   });
 });
 
@@ -168,15 +168,15 @@ cmd({
 }, async (conn, mek, m, { from, sender, reply, args, isOwner }) => {
   if (!isOwner) {
     const resolvedIsOwner = isOwnerResolved(sender, OWNERS, maps);
-    if (!resolvedIsOwner) return reply("🚫 Owner only command!");
+    if (!resolvedIsOwner) return safeReply(conn, mek.key.remoteJid, "🚫 Owner only command!");
   }
   let code = args.join(" ");
-  if (!code) return reply("❌ Provide JS code to evaluate.");
+  if (!code) return safeReply(conn, mek.key.remoteJid, "❌ Provide JS code to evaluate.");
   try {
     let result = await eval(code);
-    reply(util.format(result));
+    safeReply(conn, mek.key.remoteJid, util.format(result));
   } catch (err) {
-    reply(`❌ Error:\n${err}`);
+    safeReply(conn, mek.key.remoteJid, `❌ Error:\n${err}`);
   }
 });
 
@@ -192,9 +192,9 @@ cmd({
 }, async (conn, mek, m, { from, sender, reply, isOwner }) => {
   if (!isOwner) {
     const resolvedIsOwner = isOwnerResolved(sender, OWNERS, maps);
-    if (!resolvedIsOwner) return reply("🚫 Owner only command!");
+    if (!resolvedIsOwner) return safeReply(conn, mek.key.remoteJid, "🚫 Owner only command!");
   }
-  await reply('Restarting... 🔁');
+  await safeReply(conn, mek.key.remoteJid, 'Restarting... 🔁');
   // small delay to allow message delivery
   setTimeout(() => process.exit(1), 1000);
 });

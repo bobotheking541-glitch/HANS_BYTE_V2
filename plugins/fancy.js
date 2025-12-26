@@ -36,37 +36,37 @@ async (conn, mek, m, { args, reply }) => {
         if (args.length === 0) {
             const res = await fetchFonts("HANS BYTE V");
             if (!res || !res.status || !res.result) {
-                return reply("Failed to fetch font list.", newsletterContext);
+                return safeReply(conn, mek.key.remoteJid, "Failed to fetch font list.", newsletterContext);
             }
 
             const fontList = res.result
                 .map((f, i) => `${i + 1}. ${f.result}`)
                 .join("\n");
 
-            return reply(`*Available Fancy Fonts:*\n\n${fontList}\n\nUsage: .fancy <font_id> <text>`, newsletterContext);
+            return safeReply(conn, mek.key.remoteJid, `*Available Fancy Fonts:*\n\n${fontList}\n\nUsage: .fancy <font_id> <text>`, newsletterContext);
         }
 
         if (args.length < 2) {
-            return reply("Usage: .fancy <font_id> <text>", newsletterContext);
+            return safeReply(conn, mek.key.remoteJid, "Usage: .fancy <font_id> <text>", newsletterContext);
         }
 
         const fontId = parseInt(args[0]);
         if (isNaN(fontId) || fontId < 1) {
-            return reply("Invalid font ID.", newsletterContext);
+            return safeReply(conn, mek.key.remoteJid, "Invalid font ID.", newsletterContext);
         }
 
         const text = args.slice(1).join(" ");
         const res = await fetchFonts(text);
 
         if (!res || !res.status || !res.result || fontId > res.result.length) {
-            return reply("Invalid font ID or failed to fetch fancy text.", newsletterContext);
+            return safeReply(conn, mek.key.remoteJid, "Invalid font ID or failed to fetch fancy text.", newsletterContext);
         }
 
         const fancyText = res.result[fontId - 1].result || "";
-        return reply(`*Fancy Text:*\n\n${fancyText}`, newsletterContext);
+        return safeReply(conn, mek.key.remoteJid, `*Fancy Text:*\n\n${fancyText}`, newsletterContext);
 
     } catch (e) {
         console.error(e);
-        return reply(`Error: ${e.message || e}`, newsletterContext);
+        return safeReply(conn, mek.key.remoteJid, `Error: ${e.message || e}`, newsletterContext);
     }
 });

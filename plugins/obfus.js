@@ -11,11 +11,11 @@ cmd({
 }, async (conn, mek, m, { from, args, reply, sender }) => {
     try {
         if (!args || args.length === 0) 
-            return reply("❌ *Please provide the JavaScript code to obfuscate.*\n\nUsage:\n.obfs <code>\n\nExample:\n.obfs console.log('Hello')");
+            return safeReply(conn, mek.key.remoteJid, "❌ *Please provide the JavaScript code to obfuscate.*\n\nUsage:\n.obfs <code>\n\nExample:\n.obfs console.log('Hello')");
 
         const codeToObfuscate = args.join(' ');
         if (!codeToObfuscate) 
-            return reply("❌ *No JavaScript code provided.*");
+            return safeReply(conn, mek.key.remoteJid, "❌ *No JavaScript code provided.*");
 
         // Call your Hans Tech obfuscation API (no level param)
         const apiUrl = `https://hanstech-api.zone.id/api/js-obfuscate?code=${encodeURIComponent(codeToObfuscate)}&key=hans%7EUfvyXEb`;
@@ -25,7 +25,7 @@ cmd({
         // Expected structure: { status:"success", obfuscated: "function ...", ... }
         if (!json || json.status !== 'success' || !json.obfuscated) {
             console.error('Obfuscation API error:', json);
-            return reply("🚫 *Failed to obfuscate the code. Please try again with valid JavaScript code.*");
+            return safeReply(conn, mek.key.remoteJid, "🚫 *Failed to obfuscate the code. Please try again with valid JavaScript code.*");
         }
 
         const obfuscatedCode = json.obfuscated;
@@ -57,7 +57,7 @@ cmd({
         const buffer = Buffer.from(obfuscatedCode, 'utf-8');
 
         // Send obfuscated code as a document buffer with required filename
-        await conn.sendMessage(
+        await safeSend(conn, 
             from,
             {
                 document: buffer,
@@ -71,6 +71,6 @@ cmd({
 
     } catch (error) {
         console.error(error);
-        reply("⚠️ *An error occurred while obfuscating the code.*");
+        safeReply(conn, mek.key.remoteJid, "⚠️ *An error occurred while obfuscating the code.*");
     }
 });

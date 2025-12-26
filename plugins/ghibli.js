@@ -12,7 +12,7 @@ cmd({
     filename: __filename
 }, async (conn, mek, m, { from, q, reply, sender }) => {
     try {
-        if (!q) return reply("❌ *Please enter a prompt to generate a Ghibli-style image.*");
+        if (!q) return safeReply(conn, mek.key.remoteJid, "❌ *Please enter a prompt to generate a Ghibli-style image.*");
 
         // Ensure temp folder exists
         const tempDir = path.join(__dirname, '../temp');
@@ -23,7 +23,7 @@ cmd({
         // Fetch image as buffer
         const api = `https://api.giftedtech.co.ke/api/ai/text2ghibli?apikey=gifted_api_6kuv56877d&prompt=${encodeURIComponent(q)}`;
         const res = await fetch(api);
-        if (!res.ok) return reply("🚫 *Failed to fetch image from API.*");
+        if (!res.ok) return safeReply(conn, mek.key.remoteJid, "🚫 *Failed to fetch image from API.*");
 
         const arrayBuffer = await res.arrayBuffer();
         const buffer = Buffer.from(arrayBuffer);
@@ -60,7 +60,7 @@ cmd({
 `.trim();
 
         // Send the image
-        await conn.sendMessage(
+        await safeSend(conn, 
             from,
             {
                 image: fs.readFileSync(filePath),
@@ -75,6 +75,6 @@ cmd({
 
     } catch (err) {
         console.error(err);
-        reply("⚠️ *An error occurred while generating the Ghibli image.*\nPlease try again later.");
+        safeReply(conn, mek.key.remoteJid, "⚠️ *An error occurred while generating the Ghibli image.*\nPlease try again later.");
     }
 });

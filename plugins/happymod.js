@@ -12,7 +12,7 @@ cmd({
 }, async (conn, mek, m, { q, reply }) => {
     try {
         if (!q) {
-            return reply(
+            return safeReply(conn, mek.key.remoteJid, 
 `┌─❖ 📦 *HANS BYTE HAPPYMOD* 📦
 │
 ├  🔍 Use:  *.happymod <app name>*
@@ -21,20 +21,20 @@ cmd({
             );
         }
 
-        reply("⚡ *Searching HappyMod apps...* 🔎");
+        safeReply(conn, mek.key.remoteJid, "⚡ *Searching HappyMod apps...* 🔎");
 
         const apiUrl = `https://api.giftedtech.co.ke/api/search/happymod?apikey=gifted_api_6kuv56877d&query=${encodeURIComponent(q)}`;
         const res = await axios.get(apiUrl);
         const data = res.data;
 
         if (!data.success || data.results?.status === false) {
-            return reply("😵 *No apps found!* Try another keyword.");
+            return safeReply(conn, mek.key.remoteJid, "😵 *No apps found!* Try another keyword.");
         }
 
         const results = Array.isArray(data.results) ? data.results : [data.results];
 
         for (let app of results) {
-            await conn.sendMessage(mek.chat, {
+            await safeSend(conn, mek.chat, {
                 text: 
 `┌─❖ 📦 *HAPPYMOD RESULT* 📦
 │
@@ -58,6 +58,6 @@ cmd({
 
     } catch (e) {
         console.error("HappyMod Error:", e.response?.status, e.response?.data || e.message);
-        reply("💥 *Oops!* Something went wrong fetching HappyMod results.\nTry again later.");
+        safeReply(conn, mek.key.remoteJid, "💥 *Oops!* Something went wrong fetching HappyMod results.\nTry again later.");
     }
 });

@@ -10,13 +10,13 @@ cmd({
     filename: __filename
 }, async (conn, mek, m, { from, quoted, q, reply, sender }) => {
     try {
-        if (!q) return reply("❌ *Please enter the app name to search and download.*");
+        if (!q) return safeReply(conn, mek.key.remoteJid, "❌ *Please enter the app name to search and download.*");
 
         const api = `https://api.giftedtech.co.ke/api/download/apkdl?apikey=gifted_api_6kuv56877d&appName=${encodeURIComponent(q)}`;
         const res = await fetch(api);
         const json = await res.json();
 
-        if (!json.success || !json.result?.download_url) return reply("🚫 *App not found or failed to fetch APK.*");
+        if (!json.success || !json.result?.download_url) return safeReply(conn, mek.key.remoteJid, "🚫 *App not found or failed to fetch APK.*");
 
         const { appname, appicon, developer, mimetype, download_url } = json.result;
 
@@ -50,7 +50,7 @@ cmd({
 `.trim();
 
         // Send preview with icon
-        await conn.sendMessage(
+        await safeSend(conn, 
             from,
             {
                 image: { url: appicon },
@@ -61,7 +61,7 @@ cmd({
         );
 
         // Send the actual APK
-        await conn.sendMessage(
+        await safeSend(conn, 
             from,
             {
                 document: { url: download_url },
@@ -75,6 +75,6 @@ cmd({
 
     } catch (err) {
         console.error(err);
-        reply("⚠️ *An error occurred while processing your request.*\nPlease try again later.");
+        safeReply(conn, mek.key.remoteJid, "⚠️ *An error occurred while processing your request.*\nPlease try again later.");
     }
 });

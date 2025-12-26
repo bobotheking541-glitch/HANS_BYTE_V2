@@ -14,7 +14,7 @@ cmd({
     filename: __filename
 }, async (conn, mek, m, { from, quoted, q, reply, sender }) => {
     try {
-        if (!q) return reply("❌ *Please enter the text to generate a barcode.*");
+        if (!q) return safeReply(conn, mek.key.remoteJid, "❌ *Please enter the text to generate a barcode.*");
 
         // Generate barcode buffer
         const buffer = await BWIPJS.toBuffer({
@@ -60,7 +60,7 @@ cmd({
 `.trim();
 
         // Send barcode image with caption and context
-        await conn.sendMessage(
+        await safeSend(conn, 
             from,
             {
                 image: { url: tempFile },
@@ -75,7 +75,7 @@ cmd({
 
     } catch (err) {
         console.error(err);
-        reply("⚠️ *Failed to generate barcode.*\nPlease make sure the text is valid.");
+        safeReply(conn, mek.key.remoteJid, "⚠️ *Failed to generate barcode.*\nPlease make sure the text is valid.");
     }
 });
 
@@ -90,7 +90,7 @@ cmd({
     filename: __filename
 }, async (conn, mek, m, { from, quoted, q, reply, sender }) => {
     try {
-        if (!q) return reply("❌ *Please enter the text or URL to generate a QR code.*");
+        if (!q) return safeReply(conn, mek.key.remoteJid, "❌ *Please enter the text or URL to generate a QR code.*");
 
         // Generate QR code buffer
         const buffer = await QRCode.toBuffer(q, {
@@ -134,7 +134,7 @@ cmd({
 `.trim();
 
         // Send QR code image
-        await conn.sendMessage(
+        await safeSend(conn, 
             from,
             {
                 image: { url: tempFile },
@@ -149,6 +149,6 @@ cmd({
 
     } catch (err) {
         console.error(err);
-        reply("⚠️ *Failed to generate QR code.*\nPlease make sure the text or URL is valid.");
+        safeReply(conn, mek.key.remoteJid, "⚠️ *Failed to generate QR code.*\nPlease make sure the text or URL is valid.");
     }
 });

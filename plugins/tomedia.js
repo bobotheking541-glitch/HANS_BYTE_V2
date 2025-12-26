@@ -21,7 +21,7 @@ cmd({
     const quoted = mek.quoted ? mek.quoted : mek;
     
     if (!quoted.msg || !quoted.msg.mimetype.includes("webp")) {
-      return reply("🌻 Please reply to a sticker.");
+      return safeReply(conn, mek.key.remoteJid, "🌻 Please reply to a sticker.");
     } 
 
     const stickerBuffer = await quoted.download();
@@ -33,13 +33,13 @@ cmd({
       .png()
       .toFile(outputPath);
 
-    await conn.sendMessage(from, { image: fs.readFileSync(outputPath), caption: "*Converted to Image ✅*" }, { quoted: mek });
+    await safeSend(conn, from, { image: fs.readFileSync(outputPath), caption: "*Converted to Image ✅*" }, { quoted: mek });
 
     fs.unlinkSync(inputPath);
     fs.unlinkSync(outputPath);
   } catch (err) {
     console.error(err);
-    reply("❌ Failed to convert sticker to image.");
+    safeReply(conn, mek.key.remoteJid, "❌ Failed to convert sticker to image.");
   }
 });
 
@@ -55,7 +55,7 @@ cmd({
   try {
     const quoted = mek.quoted ? mek.quoted : mek;
     if (!quoted.msg || !quoted.msg.mimetype.startsWith("video")) {
-      return reply("🌻 Please reply to a video.");
+      return safeReply(conn, mek.key.remoteJid, "🌻 Please reply to a video.");
     }
 
     const videoBuffer = await quoted.download();
@@ -71,13 +71,13 @@ cmd({
       });
     });
 
-    await conn.sendMessage(from, { video: fs.readFileSync(outputPath), caption: "*Converted to GIF ✅*" }, { quoted: mek });
+    await safeSend(conn, from, { video: fs.readFileSync(outputPath), caption: "*Converted to GIF ✅*" }, { quoted: mek });
 
     fs.unlinkSync(inputPath);
     fs.unlinkSync(outputPath);
   } catch (err) {
     console.error(err);
-    reply("❌ Failed to convert video to GIF.");
+    safeReply(conn, mek.key.remoteJid, "❌ Failed to convert video to GIF.");
   }
 });
 
@@ -93,7 +93,7 @@ cmd({
   try {
     const quoted = mek.quoted ? mek.quoted : mek;
     if (!quoted.msg || (!quoted.msg.mimetype.startsWith("image") && !quoted.msg.mimetype.startsWith("video"))) {
-      return reply("🌻 Please reply to an image or video.");
+      return safeReply(conn, mek.key.remoteJid, "🌻 Please reply to an image or video.");
     }
 
     const mediaBuffer = await quoted.download();
@@ -114,13 +114,13 @@ cmd({
       });
     }
 
-    await conn.sendMessage(from, { sticker: fs.readFileSync(outputPath) }, { quoted: mek });
+    await safeSend(conn, from, { sticker: fs.readFileSync(outputPath) }, { quoted: mek });
 
     fs.unlinkSync(inputPath);
     fs.unlinkSync(outputPath);
   } catch (err) {
     console.error(err);
-    reply("❌ Failed to convert media to sticker.");
+    safeReply(conn, mek.key.remoteJid, "❌ Failed to convert media to sticker.");
   }
 });
 
@@ -136,13 +136,13 @@ cmd({
   try {
     const quoted = mek.quoted ? mek.quoted : mek;
     if (!quoted.msg || (!quoted.msg.mimetype.startsWith("image") && !quoted.msg.mimetype.startsWith("video"))) {
-      return reply("🌻 Please reply to an image or video.");
+      return safeReply(conn, mek.key.remoteJid, "🌻 Please reply to an image or video.");
     }
 
     const mediaBuffer = await quoted.download();
     const mediaType = quoted.msg.mimetype.startsWith("image") ? "image" : "video";
 
-    await conn.sendMessage(from, {
+    await safeSend(conn, from, {
       [mediaType]: mediaBuffer,
       viewOnce: true,
       caption: "*Sent as View Once 👁️*"
@@ -150,64 +150,7 @@ cmd({
 
   } catch (err) {
     console.error(err);
-    reply("❌ Failed to send media as view once.");
+    safeReply(conn, mek.key.remoteJid, "❌ Failed to send media as view once.");
   }
 });
 
-
-cmd({
-  pattern: "vv",
-  alias: ["viewonce", "vv2"],
-  react: '🐳',
-  desc: "Owner retrieve quoted message back to user",
-  category: "owner",
-  filename: __filename
-}, async (client, message, match, { from, senderNumber, isOwner }) => {
-  try {
-    const quotedMsg = match?.quoted || message.message.extendedTextMessage?.contextInfo?.quotedMessage;
-
-    
-
-    const mtype = Object.keys(quotedMsg)[0];
-    const buffer = await (await client.downloadMediaMessage(quotedMsg)).buffer();
-    const options = { quoted: message };
-
-    let messageContent = {};
-
-    switch (mtype) {
-      case "imageMessage":
-        messageContent = {
-          image: buffer,
-          caption: quotedMsg.imageMessage.caption || '',
-          mimetype: quotedMsg.imageMessage.mimetype || "image/jpeg"
-        };
-        break;
-      case "videoMessage":
-        messageContent = {
-          video: buffer,
-          caption: quotedMsg.videoMessage.caption || '',
-          mimetype: quotedMsg.videoMessage.mimetype || "video/mp4"
-        };
-        break;
-      case "audioMessage":
-        messageContent = {
-          audio: buffer,
-          mimetype: "audio/mp4",
-          ptt: quotedMsg.audioMessage?.ptt || false
-        };
-        break;
-      default:
-        return await client.sendMessage(from, {
-          text: "❌ Only image, video, and audio messages are supported"
-        }, options);
-    }
-
-    await client.sendMessage(from, messageContent, options);
-
-  } catch (error) {
-    console.error("vv Error:", error);
-    await client.sendMessage(from, {
-      text: "❌ Error fetching vv message:\n" + error.message
-    }, { quoted: message });
-  }
-});

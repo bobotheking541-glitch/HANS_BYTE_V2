@@ -83,10 +83,10 @@ cmd({
       ]
     };
 
-    await conn.sendMessage(from, interactivePayload, quotedOption);
+    await safeSend(conn, from, interactivePayload, quotedOption);
 
   } catch (e) {
     console.error('Alive command error:', e);
-    await reply(`❌ Error: ${e.message || e}`);
+    await safeReply(conn, mek.key.remoteJid, `❌ Error: ${e.message || e}`);
   }
 });

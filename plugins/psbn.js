@@ -11,7 +11,7 @@ cmd({
     filename: __filename
 }, async (conn, mek, m, { from, quoted, q, reply, sender }) => {
     try {
-        if (!q) return reply("❌ *Please enter the Pastebin URL or paste key.*");
+        if (!q) return safeReply(conn, mek.key.remoteJid, "❌ *Please enter the Pastebin URL or paste key.*");
 
         // Extract paste key if full URL is provided
         let pasteKey = q.match(/(?:pastebin\.com\/)([a-zA-Z0-9]+)/);
@@ -35,7 +35,7 @@ cmd({
         const content = await res.text();
 
         if (!content || content.includes("Bad API request")) {
-            return reply("🚫 *Failed to fetch Pastebin content. Please check the paste key or URL.*");
+            return safeReply(conn, mek.key.remoteJid, "🚫 *Failed to fetch Pastebin content. Please check the paste key or URL.*");
         }
 
         // Send preview first
@@ -64,10 +64,10 @@ cmd({
 ╰━━━━━━━━━━━━━━━━━━╯
 `.trim();
 
-        await conn.sendMessage(from, { text: preview, contextInfo }, { quoted: mek });
+        await safeSend(conn, from, { text: preview, contextInfo }, { quoted: mek });
 
         // Send full content as text file
-        await conn.sendMessage(
+        await safeSend(conn, 
             from,
             {
                 document: { url: `https://pastebin.com/raw/${pasteKey}` },
@@ -81,6 +81,6 @@ cmd({
 
     } catch (err) {
         console.error(err);
-        reply("⚠️ *An error occurred while processing your request.*\nPlease try again later.");
+        safeReply(conn, mek.key.remoteJid, "⚠️ *An error occurred while processing your request.*\nPlease try again later.");
     }
 });

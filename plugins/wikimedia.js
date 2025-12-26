@@ -11,15 +11,15 @@ cmd({
   filename: __filename,
 }, async (conn, mek, m, { q, reply, sender }) => {
   try {
-    if (!q) return reply("⚠️ *Please provide a search title!*\n\nUsage: .wikimedia Elon Musk");
+    if (!q) return safeReply(conn, mek.key.remoteJid, "⚠️ *Please provide a search title!*\n\nUsage: .wikimedia Elon Musk");
 
-    reply("🔍 *Fetching Wikimedia images...*");
+    safeReply(conn, mek.key.remoteJid, "🔍 *Fetching Wikimedia images...*");
 
     const apiUrl = `https://api.giftedtech.co.ke/api/search/wikimedia?apikey=gifted_api_6kuv56877d&title=${encodeURIComponent(q)}`;
     const { data } = await axios.get(apiUrl);
 
     if (!data.success || !Array.isArray(data.results) || data.results.length === 0) {
-      return reply("😕 *No images found for your query.*");
+      return safeReply(conn, mek.key.remoteJid, "😕 *No images found for your query.*");
     }
 
     // Build formatted reply text (only 5 results)
@@ -44,14 +44,14 @@ cmd({
       },
     };
 
-    await conn.sendMessage(mek.chat, {
+    await safeSend(conn, mek.chat, {
       text: txt.trim(),
       contextInfo: newsletterContext
     }, { quoted: mek });
 
   } catch (e) {
     console.error("Wikimedia Search Error:", e);
-    reply("❌ *Failed to fetch Wikimedia images.*\nTry again later!");
+    safeReply(conn, mek.key.remoteJid, "❌ *Failed to fetch Wikimedia images.*\nTry again later!");
   }
 });
 
@@ -65,14 +65,14 @@ cmd({
 }, async (conn, mek, m, { from, q, reply }) => {
   try {
     if (!q) {
-      return await conn.sendMessage(
+      return await safeSend(conn, 
         from,
         { text: "Please provide a search query for Wikipedia.", contextInfo: newsletterContext },
         { quoted: mek }
       );
     }
 
-    await conn.sendMessage(
+    await safeSend(conn, 
       from,
       { text: "🔍 Searching Wikipedia...", contextInfo: newsletterContext },
       { quoted: mek }
@@ -84,7 +84,7 @@ cmd({
 
     const page = searchResult?.query?.search?.[0];
     if (!page) {
-      return await conn.sendMessage(
+      return await safeSend(conn, 
         from,
         { text: "❌ No results found for your query.", contextInfo: newsletterContext },
         { quoted: mek }
@@ -113,7 +113,7 @@ ${translated.text}
 
 BY HANS BYTE MD`;
 
-    await conn.sendMessage(
+    await safeSend(conn, 
       from,
       {
         image: { url: thumb },
@@ -125,7 +125,7 @@ BY HANS BYTE MD`;
 
   } catch (error) {
     console.error(error);
-    await conn.sendMessage(
+    await safeSend(conn, 
       from,
       { text: `❎ An error occurred: ${error.message}`, contextInfo: newsletterContext },
       { quoted: mek }

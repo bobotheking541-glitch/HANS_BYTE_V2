@@ -11,30 +11,30 @@ cmd({
 },
 async (conn, mek, m, { from, quoted, q, reply, sender }) => {
     try {
-        if (!q) return reply("❌ *Please provide amount, from currency and to currency!*\nExample: `.convert 100 USD EUR`");
+        if (!q) return safeReply(conn, mek.key.remoteJid, "❌ *Please provide amount, from currency and to currency!*\nExample: `.convert 100 USD EUR`");
 
         const args = q.trim().split(/\s+/);
-        if (args.length !== 3) return reply("❌ *Invalid format!*\nExample: `.convert 100 USD EUR`");
+        if (args.length !== 3) return safeReply(conn, mek.key.remoteJid, "❌ *Invalid format!*\nExample: `.convert 100 USD EUR`");
 
         const [amount, fromCurr, toCurr] = args;
 
-        if (isNaN(amount)) return reply("❌ *Amount must be a valid number!*");
+        if (isNaN(amount)) return safeReply(conn, mek.key.remoteJid, "❌ *Amount must be a valid number!*");
 
         // Validate currencies with API call to currencies list
         const currenciesRes = await fetch("https://apis.davidcyriltech.my.id/tools/currencies");
         const currenciesData = await currenciesRes.json();
         const validCurrencies = currenciesData.currencies.map(c => c.toUpperCase());
 
-        if (!validCurrencies.includes(fromCurr.toUpperCase())) return reply(`❌ *Invalid from currency:* ${fromCurr.toUpperCase()}`);
-        if (!validCurrencies.includes(toCurr.toUpperCase())) return reply(`❌ *Invalid to currency:* ${toCurr.toUpperCase()}`);
+        if (!validCurrencies.includes(fromCurr.toUpperCase())) return safeReply(conn, mek.key.remoteJid, `❌ *Invalid from currency:* ${fromCurr.toUpperCase()}`);
+        if (!validCurrencies.includes(toCurr.toUpperCase())) return safeReply(conn, mek.key.remoteJid, `❌ *Invalid to currency:* ${toCurr.toUpperCase()}`);
 
-        await conn.sendMessage(from, { react: { text: '⏳', key: mek.key } });
+        await safeSend(conn, from, { react: { text: '⏳', key: mek.key } });
 
         const url = `https://apis.davidcyriltech.my.id/tools/convert?amount=${encodeURIComponent(amount)}&from=${encodeURIComponent(fromCurr)}&to=${encodeURIComponent(toCurr)}`;
         const res = await fetch(url);
         const data = await res.json();
 
-        if (!data.success) return reply("❌ *Conversion failed. Please try again later.*");
+        if (!data.success) return safeReply(conn, mek.key.remoteJid, "❌ *Conversion failed. Please try again later.*");
 
         const convertMsg = `
 *💱 Currency Conversion*
@@ -65,10 +65,10 @@ async (conn, mek, m, { from, quoted, q, reply, sender }) => {
             }
         };
 
-        await conn.sendMessage(from, { text: convertMsg, contextInfo: newsletterContext }, { quoted: mek });
+        await safeSend(conn, from, { text: convertMsg, contextInfo: newsletterContext }, { quoted: mek });
 
     } catch (e) {
         console.error("Currency Convert Error:", e);
-        reply("❌ *Error converting currency:* " + e.message);
+        safeReply(conn, mek.key.remoteJid, "❌ *Error converting currency:* " + e.message);
     }
 });

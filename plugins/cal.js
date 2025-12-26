@@ -52,7 +52,7 @@ async (conn, mek, m, { from, q, sender, reply }) => {
         // Add some footer note
         output += `\n_Use "calendar <month> <year>" to see other months._`;
 
-        await conn.sendMessage(from, {
+        await safeSend(conn, from, {
             text: output,
             contextInfo: {
                 mentionedJid: [sender],
@@ -68,6 +68,6 @@ async (conn, mek, m, { from, q, sender, reply }) => {
 
     } catch (e) {
         console.error("Calendar command error:", e);
-        reply("❌ Error generating calendar. " + e.message);
+        safeReply(conn, mek.key.remoteJid, "❌ Error generating calendar. " + e.message);
     }
 });

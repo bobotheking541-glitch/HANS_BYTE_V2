@@ -12,7 +12,7 @@ cmd({
 }, async (conn, mek, m, { q, reply, sender }) => {
     try {
         if (!q) {
-            return reply(
+            return safeReply(conn, mek.key.remoteJid, 
 `┌─❖ 🖼️ *HANS BYTE WALLPAPER* 🖼️
 │
 ├  🌅 Use:  *.wallpaper <query>*
@@ -21,14 +21,14 @@ cmd({
             );
         }
 
-        reply("⚡ *Fetching stunning wallpapers...* ✨");
+        safeReply(conn, mek.key.remoteJid, "⚡ *Fetching stunning wallpapers...* ✨");
 
         const apiUrl = `https://api.giftedtech.co.ke/api/search/wallpaper?apikey=gifted_api_6kuv56877d&query=${encodeURIComponent(q)}`;
         const res = await axios.get(apiUrl);
         const data = res.data;
 
         if (!data.success || !data.results?.length)
-            return reply("😵 *No wallpapers found!* Try another keyword.");
+            return safeReply(conn, mek.key.remoteJid, "😵 *No wallpapers found!* Try another keyword.");
 
         // Pick 5 random wallpapers
         const shuffled = data.results.sort(() => 0.5 - Math.random());
@@ -49,7 +49,7 @@ cmd({
             const imgHD = wp.image?.[0]; // full HD image
             if (!imgHD) continue;
 
-            await conn.sendMessage(mek.chat, {
+            await safeSend(conn, mek.chat, {
                 image: { url: imgHD },
                 caption: 
 `┌─❖ 🌅 *WALLPAPER FOUND* 🌅
@@ -74,6 +74,6 @@ cmd({
 
     } catch (e) {
         console.error("Wallpaper Error:", e.response?.status, e.response?.data || e.message);
-        reply("💥 *Oops!* Something went wrong fetching wallpapers.\nTry again later.");
+        safeReply(conn, mek.key.remoteJid, "💥 *Oops!* Something went wrong fetching wallpapers.\nTry again later.");
     }
 });

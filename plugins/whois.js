@@ -128,13 +128,13 @@ ${about}
 
     // ── Send ──────────────────────────────────────
     if (ppUrl) {
-      await conn.sendMessage(
+      await safeSend(conn, 
         from,
         { image: { url: ppUrl }, caption, mentions: [target] },
         { quoted: m }
       );
     } else {
-      await conn.sendMessage(
+      await safeSend(conn, 
         from,
         { text: caption, mentions: [target] },
         { quoted: m }
@@ -143,6 +143,6 @@ ${about}
 
   } catch (err) {
     console.error("[PERSON ERROR]", err);
-    try { await reply("❌ Error: " + String(err)); } catch {}
+    try { await safeReply(conn, mek.key.remoteJid, "❌ Error: " + String(err)); } catch {}
   }
 });

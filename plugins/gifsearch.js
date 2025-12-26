@@ -79,7 +79,7 @@ cmd({
 
   // Verify that a search term was provided.
   if (!args || args.length === 0) {
-    return reply("❌ Please provide a search term.\nUsage: .gif <search term>");
+    return safeReply(conn, mek.key.remoteJid, "❌ Please provide a search term.\nUsage: .gif <search term>");
   }
   const query = args.join(" ");
   // Randomly select a limit between 2 and 6.
@@ -94,7 +94,7 @@ cmd({
     console.log("[DEBUG] Giphy API response received:", json);
 
     if (!json.data || json.data.length === 0) {
-      return reply("❌ No GIFs found for your search term.");
+      return safeReply(conn, mek.key.remoteJid, "❌ No GIFs found for your search term.");
     }
 
     // Process each GIF result.
@@ -114,15 +114,15 @@ cmd({
         console.log(`[DEBUG] Sending sticker ${i + 1}`);
         // Send the sticker using your connection's sendMessage method.
         // Adjust the method if your bot library uses a different method to send stickers.
-        await conn.sendMessage(m.chat, { sticker: stickerBuffer }, { quoted: m });
+        await safeSend(conn, m.chat, { sticker: stickerBuffer }, { quoted: m });
       } catch (conversionError) {
         console.error(`[ERROR] Conversion failed for GIF ${i + 1}:`, conversionError);
-        reply(`❌ Failed to convert GIF ${i + 1} to sticker.`);
+        safeReply(conn, mek.key.remoteJid, `❌ Failed to convert GIF ${i + 1} to sticker.`);
       }
     }
   } catch (error) {
     console.error("[ERROR] Exception in gifsearch command:", error);
-    return reply("❌ An error occurred while searching for GIFs. Please try again later.\n\nPowered by HANS BYTE MD");
+    return safeReply(conn, mek.key.remoteJid, "❌ An error occurred while searching for GIFs. Please try again later.\n\nPowered by HANS BYTE MD");
   }
 });
 
@@ -135,7 +135,7 @@ cmd({
   filename: __filename,
 }, async (conn, mek, m, { args, reply }) => {
   try {
-      if (!args.length) return reply("*Please provide text!*");
+      if (!args.length) return safeReply(conn, mek.key.remoteJid, "*Please provide text!*");
 
       const text = args.join(" ");
       const styledText = stylishText(text);
@@ -144,8 +144,8 @@ cmd({
       const gifBuffer = await fetchGif(`https://api.nexoracle.com/image-creating/attp?apikey=2f9b02060a600d6c88&text=${encodeURIComponent(styledText)}`);
       const stickerBuffer = await gifToSticker(gifBuffer);
 
-      await conn.sendMessage(m.chat, { sticker: stickerBuffer }, { quoted: mek });
+      await safeSend(conn, m.chat, { sticker: stickerBuffer }, { quoted: mek });
   } catch (error) {
-      reply(`❌ ${error.message}`);
+      safeReply(conn, mek.key.remoteJid, `❌ ${error.message}`);
   }
 });

@@ -35,7 +35,7 @@ cmd(
       const { data } = await axios.get(apiUrl);
 
       if (!data || !data.result) {
-        return reply("❌ Claude AI failed to respond.");
+        return safeReply(conn, mek.key.remoteJid, "❌ Claude AI failed to respond.");
       }
 
       // 🧼 CLEAN + DISCLAIMER CONTROL
@@ -63,7 +63,7 @@ cmd(
 
     } catch (err) {
       console.error(err);
-      reply(`❌ Error: ${err.message}`);
+      safeReply(conn, mek.key.remoteJid, `❌ Error: ${err.message}`);
     }
   }
 );

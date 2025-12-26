@@ -14,7 +14,7 @@ cmd({
         const res = await fetch(`https://api.giftedtech.co.ke/api/tempmail/generate?apikey=gifted_api_6kuv56877d`);
         const data = await res.json();
 
-        if (!data.success) return reply("❌ Failed to generate temp mail.");
+        if (!data.success) return safeReply(conn, mek.key.remoteJid, "❌ Failed to generate temp mail.");
 
         const msg = `
 ╭━[   *TEMP MAIL*   ]━╮
@@ -26,10 +26,10 @@ cmd({
 ⚡ Use: ${config.PREFIX}inbox <email>
 `;
 
-        reply(msg);
+        safeReply(conn, mek.key.remoteJid, msg);
     } catch (err) {
         console.error(err);
-        reply("❌ Error generating temp mail.");
+        safeReply(conn, mek.key.remoteJid, "❌ Error generating temp mail.");
     }
 });
 
@@ -43,13 +43,13 @@ cmd({
     filename: __filename
 }, async (conn, mek, m, { reply, q }) => {
     try {
-        if (!q) return reply("❌ Provide the email. Example: .inbox test@aminating.com");
+        if (!q) return safeReply(conn, mek.key.remoteJid, "❌ Provide the email. Example: .inbox test@aminating.com");
 
         const res = await fetch(`https://api.giftedtech.co.ke/api/tempmail/inbox?apikey=gifted_api_6kuv56877d&email=${encodeURIComponent(q)}`);
         const data = await res.json();
 
-        if (!data.success) return reply("❌ Failed to fetch inbox.");
-        if (!data.result || data.result.length === 0) return reply("📭 No emails received yet. Try again later.");
+        if (!data.success) return safeReply(conn, mek.key.remoteJid, "❌ Failed to fetch inbox.");
+        if (!data.result || data.result.length === 0) return safeReply(conn, mek.key.remoteJid, "📭 No emails received yet. Try again later.");
 
         const mails = data.result.map((mail, i) => 
             `┃ 📩 *${i+1}.* From: ${mail.from}\n┃ 📝 Subject: ${mail.subject}\n┃ 🆔 ID: ${mail.id}`
@@ -64,10 +64,10 @@ ${mails}
 ⚡ Use: ${config.PREFIX}mail <email> <id>
 `;
 
-        reply(msg);
+        safeReply(conn, mek.key.remoteJid, msg);
     } catch (err) {
         console.error(err);
-        reply("❌ Error fetching inbox.");
+        safeReply(conn, mek.key.remoteJid, "❌ Error fetching inbox.");
     }
 });
 
@@ -82,13 +82,13 @@ cmd({
 }, async (conn, mek, m, { reply, q }) => {
     try {
         const [email, id] = q.split(" ");
-        if (!email || !id) return reply(`❌ Usage: ${config.PREFIX}mail <email> <messageID>`);
+        if (!email || !id) return safeReply(conn, mek.key.remoteJid, `❌ Usage: ${config.PREFIX}mail <email> <messageID>`);
 
         const res = await fetch(`https://api.giftedtech.co.ke/api/tempmail/message?apikey=gifted_api_6kuv56877d&email=${encodeURIComponent(email)}&messageid=${id}`);
         const data = await res.json();
 
-        if (!data.success) return reply("❌ Failed to fetch message.");
-        if (!data.result) return reply("📭 No such message found.");
+        if (!data.success) return safeReply(conn, mek.key.remoteJid, "❌ Failed to fetch message.");
+        if (!data.result) return safeReply(conn, mek.key.remoteJid, "📭 No such message found.");
 
         const msg = `
 ╭━[   *EMAIL MESSAGE*   ]━╮
@@ -99,9 +99,9 @@ cmd({
 ╰━━━━━━━━━━━━━━━━━━━━╯
 `;
 
-        reply(msg);
+        safeReply(conn, mek.key.remoteJid, msg);
     } catch (err) {
         console.error(err);
-        reply("❌ Error fetching message.");
+        safeReply(conn, mek.key.remoteJid, "❌ Error fetching message.");
     }
 });

@@ -11,15 +11,15 @@ cmd({
 },
 async (conn, mek, m, { from, quoted, q, reply, sender }) => {
     try {
-        if (!q) return reply("❌ *Please provide some text to analyze!*\nExample: `.detectai Your text here`");
+        if (!q) return safeReply(conn, mek.key.remoteJid, "❌ *Please provide some text to analyze!*\nExample: `.detectai Your text here`");
 
-        await conn.sendMessage(from, { react: { text: '⏳', key: mek.key } });
+        await safeSend(conn, from, { react: { text: '⏳', key: mek.key } });
 
         const url = `https://apis.davidcyriltech.my.id/api/detect?text=${encodeURIComponent(q)}`;
         const res = await fetch(url);
         const data = await res.json();
 
-        if (data.error) return reply(`❌ *API Error:* ${data.error}`);
+        if (data.error) return safeReply(conn, mek.key.remoteJid, `❌ *API Error:* ${data.error}`);
 
         const aiScore = data.result.ai_score.toFixed(2);
         const humanScore = data.result.human_score.toFixed(2);
@@ -57,7 +57,7 @@ Use this as a guideline, not absolute certainty.
             }
         };
 
-        await conn.sendMessage(
+        await safeSend(conn, 
             from,
             { text: resultMsg, contextInfo: newsletterContext },
             { quoted: mek }
@@ -65,6 +65,6 @@ Use this as a guideline, not absolute certainty.
 
     } catch (e) {
         console.error("AI Detect Error:", e);
-        reply("❌ *Error detecting text:* " + e.message);
+        safeReply(conn, mek.key.remoteJid, "❌ *Error detecting text:* " + e.message);
     }
 });

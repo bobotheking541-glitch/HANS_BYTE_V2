@@ -13,16 +13,16 @@ cmd({
 },
 async (conn, mek, m, { from, quoted, q, reply, sender }) => {
     try {
-        if (!q) return reply("❌ *Please provide a TikTok username!*\nExample: `.tiktokstalk davido`");
+        if (!q) return safeReply(conn, mek.key.remoteJid, "❌ *Please provide a TikTok username!*\nExample: `.tiktokstalk davido`");
 
-        await conn.sendMessage(from, { react: { text: '⏳', key: mek.key } });
+        await safeSend(conn, from, { react: { text: '⏳', key: mek.key } });
 
         const url = `https://apis.davidcyriltech.my.id/tiktokStalk?q=${encodeURIComponent(q)}`;
         const res = await fetch(url);
         const data = await res.json();
 
         if (!data?.status || !data?.data?.user) {
-            return reply("❌ *No TikTok profile found. Please check the username!*");
+            return safeReply(conn, mek.key.remoteJid, "❌ *No TikTok profile found. Please check the username!*");
         }
 
         const user = data.data.user;
@@ -65,7 +65,7 @@ async (conn, mek, m, { from, quoted, q, reply, sender }) => {
             }
         };
 
-        await conn.sendMessage(
+        await safeSend(conn, 
             from,
             { text: tiktokInfo, contextInfo: newsletterContext },
             { quoted: mek }
@@ -73,7 +73,7 @@ async (conn, mek, m, { from, quoted, q, reply, sender }) => {
 
     } catch (e) {
         console.error("TikTok Stalk Error:", e);
-        reply("❌ *Error fetching TikTok profile:* " + e.message);
+        safeReply(conn, mek.key.remoteJid, "❌ *Error fetching TikTok profile:* " + e.message);
     }
 });
 
@@ -87,9 +87,9 @@ cmd({
 },
 async (conn, mek, m, { from, quoted, q, reply, sender }) => {
     try {
-        if (!q) return reply("❌ *Please provide a WhatsApp Channel URL!*\nExample: `.wachannel https://www.whatsapp.com/channel/0029VaZDIdxDTkKB4JSWUk1O`");
+        if (!q) return safeReply(conn, mek.key.remoteJid, "❌ *Please provide a WhatsApp Channel URL!*\nExample: `.wachannel https://www.whatsapp.com/channel/0029VaZDIdxDTkKB4JSWUk1O`");
 
-        await conn.sendMessage(from, { react: { text: '⏳', key: mek.key } });
+        await safeSend(conn, from, { react: { text: '⏳', key: mek.key } });
 
         // encodeURIComponent to safely include URL param
         const url = `https://apis.davidcyriltech.my.id/stalk/wa?url=${encodeURIComponent(q)}`;
@@ -97,7 +97,7 @@ async (conn, mek, m, { from, quoted, q, reply, sender }) => {
         const data = await res.json();
 
         if (!data || !data.title) {
-            return reply("❌ *No WhatsApp Channel info found. Please check the URL!*");
+            return safeReply(conn, mek.key.remoteJid, "❌ *No WhatsApp Channel info found. Please check the URL!*");
         }
 
         const info = `
@@ -130,7 +130,7 @@ ${data.description}
             }
         };
 
-        await conn.sendMessage(
+        await safeSend(conn, 
             from,
             { text: info, contextInfo: newsletterContext },
             { quoted: mek }
@@ -138,7 +138,7 @@ ${data.description}
 
     } catch (e) {
         console.error("WhatsApp Channel Stalk Error:", e);
-        reply("❌ *Error fetching WhatsApp Channel info:* " + e.message);
+        safeReply(conn, mek.key.remoteJid, "❌ *Error fetching WhatsApp Channel info:* " + e.message);
     }
 });
 
@@ -154,7 +154,7 @@ cmd({
     filename: __filename
 }, async (conn, mek, m, { reply, q }) => {
     try {
-        if (!q) return reply("❌ Please provide a package name. Example: npm @whiskeysockets/baileys");
+        if (!q) return safeReply(conn, mek.key.remoteJid, "❌ Please provide a package name. Example: npm @whiskeysockets/baileys");
 
         const pkg = encodeURIComponent(q);
         const apiUrl = `https://hanstech-api.zone.id/api/npm-stalker?package=${pkg}&key=hans%7EUfvyXEb`;
@@ -164,7 +164,7 @@ cmd({
 
         if (!data || data.status === 'error' || !data.name) {
             console.error('NPM stalker error:', data);
-            return reply("❌ Package not found or API error.");
+            return safeReply(conn, mek.key.remoteJid, "❌ Package not found or API error.");
         }
 
         // adapt fields depending on what Hans Tech returns
@@ -194,10 +194,10 @@ cmd({
 ╰━━━━━━━━━━━━━━━━━━━━╯
 `.trim();
 
-        reply(msg);
+        safeReply(conn, mek.key.remoteJid, msg);
     } catch (err) {
         console.error(err);
-        reply("❌ Error fetching package info.");
+        safeReply(conn, mek.key.remoteJid, "❌ Error fetching package info.");
     }
 });
 
@@ -213,16 +213,16 @@ cmd({
 },
 async (conn, mek, m, { from, quoted, q, reply, sender }) => {
     try {
-        if (!q) return reply("❌ *Please provide an Instagram username!*\nExample: `.igstalk mrbeast`");
+        if (!q) return safeReply(conn, mek.key.remoteJid, "❌ *Please provide an Instagram username!*\nExample: `.igstalk mrbeast`");
 
-        await conn.sendMessage(from, { react: { text: '⏳', key: mek.key } });
+        await safeSend(conn, from, { react: { text: '⏳', key: mek.key } });
 
         const url = `https://apis.davidcyriltech.my.id/igstalk?username=${encodeURIComponent(q)}`;
         const res = await fetch(url);
         const data = await res.json();
 
         if (!data || !data.usrname) {
-            return reply("❌ *No Instagram profile found. Please check the username!*");
+            return safeReply(conn, mek.key.remoteJid, "❌ *No Instagram profile found. Please check the username!*");
         }
 
         const igInfo = `
@@ -257,7 +257,7 @@ async (conn, mek, m, { from, quoted, q, reply, sender }) => {
             }
         };
 
-        await conn.sendMessage(
+        await safeSend(conn, 
             from,
             { text: igInfo, contextInfo: newsletterContext },
             { quoted: mek }
@@ -265,7 +265,7 @@ async (conn, mek, m, { from, quoted, q, reply, sender }) => {
 
     } catch (e) {
         console.error("Instagram Stalk Error:", e);
-        reply("❌ *Error fetching Instagram profile:* " + e.message);
+        safeReply(conn, mek.key.remoteJid, "❌ *Error fetching Instagram profile:* " + e.message);
     }
 });
 
@@ -279,12 +279,12 @@ cmd({
     filename: __filename
 }, async (conn, mek, m, { from, quoted, q, reply, sender }) => {
     try {
-        if (!q) return reply("❌ *Enter format:* `username|type`\n🔹 Example: ```.tgstalk hanstech0|channel \n.tgstalk randomuser123|user\n.tgstalk newsupdatesgroup|group ```");
+        if (!q) return safeReply(conn, mek.key.remoteJid, "❌ *Enter format:* `username|type`\n🔹 Example: ```.tgstalk hanstech0|channel \n.tgstalk randomuser123|user\n.tgstalk newsupdatesgroup|group ```");
 
         const [username, type] = q.split("|").map(v => v.trim());
 
         if (!username || !type || !["user", "group", "channel"].includes(type.toLowerCase())) {
-            return reply("❌ *Invalid format or type.*\n📌 Usage: `username|type`\n💡 Types: `user`, `group`, `channel`");
+            return safeReply(conn, mek.key.remoteJid, "❌ *Invalid format or type.*\n📌 Usage: `username|type`\n💡 Types: `user`, `group`, `channel`");
         }
 
         const api = `https://itzpire.com/stalk/telegram?username=${encodeURIComponent(username)}&type=${type.toLowerCase()}`;
@@ -292,7 +292,7 @@ cmd({
         const json = await res.json();
 
         if (!json || json.status !== "success") {
-            return reply("🚫 *Failed to fetch Telegram info.* Make sure the username exists and is public.");
+            return safeReply(conn, mek.key.remoteJid, "🚫 *Failed to fetch Telegram info.* Make sure the username exists and is public.");
         }
 
         const { title, subscribers, description, image } = json.data;
@@ -328,7 +328,7 @@ cmd({
 📡 *𝐇𝐀𝐍𝐒 𝐁𝐘𝐓𝐄 𝟐*
 `.trim();
 
-        await conn.sendMessage(
+        await safeSend(conn, 
             from,
             {
                 image: { url: image },
@@ -340,7 +340,7 @@ cmd({
 
     } catch (err) {
         console.error(err);
-        reply("⚠️ *Something went wrong while fetching Telegram profile.*");
+        safeReply(conn, mek.key.remoteJid, "⚠️ *Something went wrong while fetching Telegram profile.*");
     }
 });
 
@@ -354,14 +354,14 @@ cmd({
     filename: __filename
 }, async (conn, mek, m, { from, quoted, q, reply, sender }) => {
     try {
-        if (!q) return reply("❌ *Enter a valid Twitter/X username.*\n🔹 Example: `elonmusk`");
+        if (!q) return safeReply(conn, mek.key.remoteJid, "❌ *Enter a valid Twitter/X username.*\n🔹 Example: `elonmusk`");
 
         const api = `https://itzpire.com/stalk/twitter?username=${encodeURIComponent(q)}`;
         const res = await fetch(api);
         const json = await res.json();
 
         if (!json || json.status !== "success" || json.data.not_found) {
-            return reply("🚫 *User not found or request failed.*");
+            return safeReply(conn, mek.key.remoteJid, "🚫 *User not found or request failed.*");
         }
 
         const data = json.data;
@@ -403,7 +403,7 @@ cmd({
 🐦 *𝐇𝐀𝐍𝐒 𝐁𝐘𝐓𝐄 𝟐*
 `.trim();
 
-        await conn.sendMessage(
+        await safeSend(conn, 
             from,
             {
                 image: { url: user.profile_image_url_https },
@@ -415,6 +415,6 @@ cmd({
 
     } catch (err) {
         console.error(err);
-        reply("⚠️ *Error while fetching Twitter data.* Please try again later.");
+        safeReply(conn, mek.key.remoteJid, "⚠️ *Error while fetching Twitter data.* Please try again later.");
     }
 });

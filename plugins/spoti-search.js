@@ -12,7 +12,7 @@ cmd({
 }, async (conn, mek, m, { q, reply, sender }) => {
     try {
         if (!q) {
-            return reply(
+            return safeReply(conn, mek.key.remoteJid, 
 `┌─❖ ⚡ *HANS BYTE V2* ⚡
 │
 ├  🎵 Use:  *.spoti <song-name>*
@@ -31,7 +31,7 @@ cmd({
             const dlRes = await axios.get(dlUrl);
             dlData = dlRes.data;
             if (!dlData.success || !dlData.result?.download_url)
-                return reply("😵 *Oops!* Couldn't download that Spotify track!");
+                return safeReply(conn, mek.key.remoteJid, "😵 *Oops!* Couldn't download that Spotify track!");
             track = dlData.result;
 
         } else {
@@ -41,7 +41,7 @@ cmd({
             const searchData = searchRes.data;
 
             if (!searchData.success || !searchData.results?.length)
-                return reply("😵 *No results!* Try another name.");
+                return safeReply(conn, mek.key.remoteJid, "😵 *No results!* Try another name.");
 
             const first = searchData.results[0];
 
@@ -50,7 +50,7 @@ cmd({
             dlData = dlRes.data;
 
             if (!dlData.success || !dlData.result?.download_url)
-                return reply("😵 *Download failed!* Try again later.");
+                return safeReply(conn, mek.key.remoteJid, "😵 *Download failed!* Try again later.");
 
             track = dlData.result;
             track.artist = first.artist; // enrich with artist from search
@@ -70,7 +70,7 @@ cmd({
         };
 
         // Show info card
-        await conn.sendMessage(mek.chat, {
+        await safeSend(conn, mek.chat, {
             image: { url: thumbnail },
             caption: 
 `┌─❖ 🎶 *TRACK FOUND* 🎶
@@ -84,7 +84,7 @@ cmd({
         }, { quoted: mek });
 
         // Send audio
-        await conn.sendMessage(mek.chat, {
+        await safeSend(conn, mek.chat, {
             audio: { url: download_url },
             mimetype: "audio/mp4",
             fileName: `${title}.mp3`,
@@ -93,6 +93,6 @@ cmd({
 
     } catch (e) {
         console.error("Spotify Error:", e.response?.status, e.response?.data || e.message);
-        reply("💥 *Yikes!* Something went wrong while processing your request!\nTry again later.");
+        safeReply(conn, mek.key.remoteJid, "💥 *Yikes!* Something went wrong while processing your request!\nTry again later.");
     }
 });

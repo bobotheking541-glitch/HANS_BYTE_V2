@@ -12,14 +12,14 @@ cmd({
     filename: __filename,
 }, async (conn, mek, m, { args, q, reply, sender }) => {
     try {
-        if (!q) return reply("🤖 *Yo!* Where's the Facebook URL?\n\nExample: .fbdl https://www.facebook.com/...");
+        if (!q) return safeReply(conn, mek.key.remoteJid, "🤖 *Yo!* Where's the Facebook URL?\n\nExample: .fbdl https://www.facebook.com/...");
 
         // Validate URL format
         if (!q.match(/https?:\/\/(www\.)?facebook\.com\/.+/i)) {
-            return reply("🚫 *Oops!* That doesn't look like a Facebook link!\nSend me a proper Facebook video URL!");
+            return safeReply(conn, mek.key.remoteJid, "🚫 *Oops!* That doesn't look like a Facebook link!\nSend me a proper Facebook video URL!");
         }
 
-        reply("⚡ *Processing your request...*\n_Hold tight while I work my magic!_ ✨");
+        safeReply(conn, mek.key.remoteJid, "⚡ *Processing your request...*\n_Hold tight while I work my magic!_ ✨");
 
         // API endpoint
         const apiUrl = `https://apis.davidcyriltech.my.id/facebook3?url=${encodeURIComponent(q)}`;
@@ -44,9 +44,9 @@ cmd({
         if (!data.status || !data.results || !data.results.hdLink) {
             // Detailed error handling
             if (data.message) {
-                return reply(`😵 *Whoops!* API Error: ${data.message}`);
+                return safeReply(conn, mek.key.remoteJid, `😵 *Whoops!* API Error: ${data.message}`);
             }
-            return reply("😵 *Whoops!* Couldn't fetch that video!\nThe video might be private or unavailable.");
+            return safeReply(conn, mek.key.remoteJid, "😵 *Whoops!* Couldn't fetch that video!\nThe video might be private or unavailable.");
         }
 
         const { title, caption, duration, image, hdLink } = data.results;
@@ -64,7 +64,7 @@ cmd({
         };
 
         // Send downloading status
-        await conn.sendMessage(mek.chat, {
+        await safeSend(conn, mek.chat, {
             text: `📥 *Downloading HD Video...*\n\n` +
                   `⌛ *Duration:* ${duration || "Unknown"}\n` +
                   `🔥 *Powered by HANS BYTE V2*`,
@@ -72,7 +72,7 @@ cmd({
         }, { quoted: mek });
 
         // Send HD video directly
-        await conn.sendMessage(mek.chat, {
+        await safeSend(conn, mek.chat, {
             video: { url: hdLink },
             caption: `✅ *Download Complete!*\n\n` +
                      `🎬 *${title || "Facebook Video"}*\n` +
@@ -98,6 +98,6 @@ cmd({
         }
         
         errorMsg += "\n\nTry again later or use a different link!";
-        reply(errorMsg);
+        safeReply(conn, mek.key.remoteJid, errorMsg);
     }
 });

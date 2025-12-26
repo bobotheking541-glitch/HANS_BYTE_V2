@@ -2,7 +2,7 @@ const fs = require('fs');
 const path = require('path');
 const { cmd, commands } = require('../command');
 const config = require('../config');
-const envPath = path.join(__dirname, '../config.env');
+const envPath = path.join(__dirname, '../.env');
 
 // Helper to read env as object
 function readEnvFile() {
@@ -26,18 +26,18 @@ function writeEnvFile(env) {
 cmd({
     pattern: "readenv",
     use: ".readenv <KEY>",
-    desc: "Read a value from config.env (Owner only).",
+    desc: "Read a value from .env (Owner only).",
     category: "owner",
     filename: __filename
 }, async (conn, mek, m, { sender, reply, args, isOwner }) => {
-    if (!isOwner) return reply("🚫 Owner only!");
-    if (!args[0]) return reply("❌ Provide a KEY to read. eg: .readenv PREFIX");
+    if (!isOwner) return safeReply(conn, mek.key.remoteJid, "🚫 Owner only!");
+    if (!args[0]) return safeReply(conn, mek.key.remoteJid, "❌ Provide a KEY to read. eg: .readenv PREFIX");
 
     const env = readEnvFile();
     const key = args[0].toUpperCase();
-    if (!(key in env)) return reply(`⚠️ Key "${key}" not found.`);
+    if (!(key in env)) return safeReply(conn, mek.key.remoteJid, `⚠️ Key "${key}" not found.`);
     
-    reply(`📄 ${key} = ${env[key]}`);
+    safeReply(conn, mek.key.remoteJid, `📄 ${key} = ${env[key]}`);
 });
 
 // =================== setenv ===================
@@ -48,8 +48,8 @@ cmd({
     category: "owner",
     filename: __filename
 }, async (conn, mek, m, { sender, reply, args, isOwner }) => {
-    if (!isOwner) return reply("🚫 Owner only!");
-    if (args.length < 2) return reply("❌ Usage: .setenv <KEY> <VALUE> eg: .setenv MODE private");
+    if (!isOwner) return safeReply(conn, mek.key.remoteJid, "🚫 Owner only!");
+    if (args.length < 2) return safeReply(conn, mek.key.remoteJid, "❌ Usage: .setenv <KEY> <VALUE> eg: .setenv MODE private");
 
     const key = args[0].toUpperCase();
     const value = args.slice(1).join(' ');
@@ -61,7 +61,7 @@ cmd({
     // Update in-memory config if key exists
     if (key in config) config[key] = value;
 
-    reply(`✅ Updated ${key} = ${value}`);
+    safeReply(conn, mek.key.remoteJid, `✅ Updated ${key} = ${value}`);
 });
 
 // =================== env ===================
@@ -72,15 +72,15 @@ cmd({
     category: "owner",
     filename: __filename
 }, async (conn, mek, m, { sender, reply, isOwner }) => {
-    if (!isOwner) return reply("🚫 Owner only!");
+    if (!isOwner) return safeReply(conn, mek.key.remoteJid, "🚫 Owner only!");
 
     const env = readEnvFile();
-    if (!Object.keys(env).length) return reply("⚠️ config.env is empty.");
+    if (!Object.keys(env).length) return safeReply(conn, mek.key.remoteJid, "⚠️ config.env is empty.");
 
     let text = "📄 *Environment Variables:*\n\n";
     for (const [k,v] of Object.entries(env)) {
         text += `${k} = ${v}\n`;
     }
 
-    reply(text);
+    safeReply(conn, mek.key.remoteJid, text);
 });

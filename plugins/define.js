@@ -26,10 +26,10 @@ cmd({
         const example = firstEntry.example ? `\n\n*Example:* ${firstEntry.example}` : '';
 
         const message = `📖 *Word:* ${query}\n\n*Definition:* ${definition}${example}`;
-        await conn.sendMessage(from, { text: message }, { quoted: mek });
+        await safeSend(conn, from, { text: message }, { quoted: mek });
 
     } catch (error) {
         console.error("[ERROR] define command:", error);
-        await conn.sendMessage(from, { text: `Error: ${error.message}` }, { quoted: mek });
+        await safeSend(conn, from, { text: `Error: ${error.message}` }, { quoted: mek });
     }
 });

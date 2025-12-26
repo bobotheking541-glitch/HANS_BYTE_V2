@@ -34,7 +34,7 @@ cmd({
   reply
 }) => {
   try {
-    if (!q) return reply("❗️ Please provide a question.");
+    if (!q) return safeReply(conn, mek.key.remoteJid, "❗️ Please provide a question.");
 
     const userQuery = `Hey there! I’m ${pushname} . Whatever I say—no matter how random, weird, or short—turn it into an incredible story. Make it long, thrilling, and unforgettable, filled with adventure, emotion, and vivid details that draw the reader in. Don’t hold back—make every sentence epic, exciting, and immersive and make use of emojis to spice up all. Here’s what I want to share:
 ${q} ❓`;
@@ -43,15 +43,15 @@ ${q} ❓`;
     const response = await axios.get(apiUrl);
 
     const aiResponse = response.data?.result;
-    if (!aiResponse) return reply("❌ Error: No response from AI.");
+    if (!aiResponse) return safeReply(conn, mek.key.remoteJid, "❌ Error: No response from AI.");
 
     const contextInfo = createNewsletterContext(sender);
-    await reply(aiResponse, { contextInfo });
+    await safeReply(conn, mek.key.remoteJid, aiResponse, { contextInfo });
 
     console.log(`Question by: ${pushname}`);
   } catch (error) {
     console.error("Error:", error.response?.data || error.message);
-    reply("❌ Error processing your question 😢");
+    safeReply(conn, mek.key.remoteJid, "❌ Error processing your question 😢");
   }
 });
 

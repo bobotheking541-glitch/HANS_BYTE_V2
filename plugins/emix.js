@@ -40,13 +40,13 @@ cmd({
 }, async (conn, mek, m, { args, q, reply, sender }) => {
     try {
         if (!q.includes(",")) {
-            return reply("❌ *Usage:* .emix 😂,🙂\n_Send two emojis separated by a comma._");
+            return safeReply(conn, mek.key.remoteJid, "❌ *Usage:* .emix 😂,🙂\n_Send two emojis separated by a comma._");
         }
 
         let [emoji1, emoji2] = q.split(",").map(e => e.trim());
 
         if (!emoji1 || !emoji2) {
-            return reply("❌ Please provide two emojis separated by a comma.");
+            return safeReply(conn, mek.key.remoteJid, "❌ Please provide two emojis separated by a comma.");
         }
 
         // Construct API URL using Emoji Kitchen API
@@ -57,7 +57,7 @@ cmd({
 
         let buffer = await getBuffer(apiUrl);
         if (!buffer) {
-            return reply("❌ Could not generate emoji mix. Try different emojis.");
+            return safeReply(conn, mek.key.remoteJid, "❌ Could not generate emoji mix. Try different emojis.");
         }
         
         let sticker = new Sticker(buffer, {
@@ -83,13 +83,13 @@ cmd({
             },
         };
 
-        await conn.sendMessage(mek.chat, { 
+        await safeSend(conn, mek.chat, { 
             sticker: stickerBuffer, 
             contextInfo: newsletterContext 
         }, { quoted: mek });
 
     } catch (e) {
         console.error("Error in .emix command:", e.message);
-        reply(`❌ Could not generate emoji mix: ${e.message}`);
+        safeReply(conn, mek.key.remoteJid, `❌ Could not generate emoji mix: ${e.message}`);
     }
 });

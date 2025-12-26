@@ -16,14 +16,14 @@ async (conn, mek, m, { from, prefix, quoted, q, reply }) => {
         const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
         if (!q) {
-            return await reply("*Example -* .pair +23769690xxxx");
+            return await safeReply(conn, mek.key.remoteJid, "*Example -* .pair +23769690xxxx");
         }
 
         const response = await fetch(`https://hans-pair-site.onrender.com/code?number=${q}`);
         const pair = await response.json();
 
         if (!pair || !pair.code) {
-            return await reply("Failed to retrieve pairing code. Please check the phone number and try again.");
+            return await safeReply(conn, mek.key.remoteJid, "Failed to retrieve pairing code. Please check the phone number and try again.");
         }
 
         const pairingCode = pair.code;
@@ -42,7 +42,7 @@ async (conn, mek, m, { from, prefix, quoted, q, reply }) => {
         };
 
         // Send "done" message
-        await conn.sendMessage(from, {
+        await safeSend(conn, from, {
             text: `${doneMessage}\n\n*Your pairing code is:* ${pairingCode}`,
             contextInfo: newsletterContext
         }, { quoted: mek });
@@ -50,13 +50,13 @@ async (conn, mek, m, { from, prefix, quoted, q, reply }) => {
         await sleep(2000);
 
         // Send pairing code separately
-        await conn.sendMessage(from, {
+        await safeSend(conn, from, {
             text: `${pairingCode}`,
             contextInfo: newsletterContext
         }, { quoted: mek });
 
     } catch (error) {
         console.error(error);
-        await reply("An error occurred. Please try again later.");
+        await safeReply(conn, mek.key.remoteJid, "An error occurred. Please try again later.");
     }
 });

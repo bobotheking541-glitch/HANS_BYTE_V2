@@ -29,7 +29,7 @@ cmd(
       // Get the user's prompt
       const prompt = args.join(' ');
       if (!prompt) {
-        return reply('❗️ Please provide a prompt.');
+        return safeReply(conn, mek.key.remoteJid, '❗️ Please provide a prompt.');
       }
 
       // Construct the API request URL
@@ -51,7 +51,7 @@ cmd(
       });
     } catch (error) {
       console.error('Error:', error);
-      reply('❌ Error generating image.');
+      safeReply(conn, mek.key.remoteJid, '❌ Error generating image.');
     }
   }
 );

@@ -11,10 +11,10 @@ cmd({
 }, async (conn, m, store, { from, q, reply }) => {
   try {
     if (!q || !q.startsWith("http")) {
-      return reply("❌ Please provide a valid Capcut link.");
+      return safeReply(conn, mek.key.remoteJid, "❌ Please provide a valid Capcut link.");
     }
 
-    await conn.sendMessage(from, {
+    await safeSend(conn, from, {
       react: { text: "⏳", key: m.key }
     });
 
@@ -22,11 +22,11 @@ cmd({
     const data = response.data;
 
     if (!data || data.status !== true || !data.result || !data.result.url) {
-      return reply("⚠️ Failed to fetch Capcut content. Please check the link and try again.");
+      return safeReply(conn, mek.key.remoteJid, "⚠️ Failed to fetch Capcut content. Please check the link and try again.");
     }
 
     // Sending the video
-    await conn.sendMessage(from, {
+    await safeSend(conn, from, {
       video: { url: data.result.url },
       mimetype: "video/mp4",
       caption: `📥 *Capcut Template Downloaded HANS BYTE*\n🎥 *Title:* ${data.result.title}\n📏 *Size:* ${data.result.size}`
@@ -34,6 +34,6 @@ cmd({
 
   } catch (error) {
     console.error("Error:", error);
-    reply("❌ An error occurred while processing your request. Please try again.");
+    safeReply(conn, mek.key.remoteJid, "❌ An error occurred while processing your request. Please try again.");
   }
 });

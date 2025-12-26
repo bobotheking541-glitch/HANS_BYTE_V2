@@ -11,14 +11,14 @@ cmd({
 },
 async (conn, mek, m, { from, args, q, reply, react }) => {
     try {
-        if (!q) return reply("Please provide a country name.\nExample: `.countryinfo Pakistan`");
+        if (!q) return safeReply(conn, mek.key.remoteJid, "Please provide a country name.\nExample: `.countryinfo Pakistan`");
 
         const apiUrl = `https://api.siputzx.my.id/api/tools/countryInfo?name=${encodeURIComponent(q)}`;
         const { data } = await axios.get(apiUrl);
 
         if (!data.status || !data.data) {
-            await conn.sendMessage(from, { react: { text: "❌", key: m.key } });
-            return reply(`No information found for *${q}*. Please check the country name.`);
+            await safeSend(conn, from, { react: { text: "❌", key: m.key } });
+            return safeReply(conn, mek.key.remoteJid, `No information found for *${q}*. Please check the country name.`);
         }
 
         const info = data.data;
@@ -51,18 +51,18 @@ async (conn, mek, m, { from, args, q, reply, react }) => {
             }
         };
 
-        await conn.sendMessage(from, {
+        await safeSend(conn, from, {
             image: { url: info.flag },
             caption: text,
             contextInfo: newsletterContext
         }, { quoted: mek });
 
-        await conn.sendMessage(from, { react: { text: "✅", key: m.key } });
+        await safeSend(conn, from, { react: { text: "✅", key: m.key } });
 
 
     } catch (e) {
         console.error("Error in countryinfo command:", e);
         await react("❌");
-        reply("An error occurred while fetching country information.");
+        safeReply(conn, mek.key.remoteJid, "An error occurred while fetching country information.");
     }
 });

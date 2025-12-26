@@ -25,7 +25,7 @@ cmd({
     const mimeType = (quotedMsg.msg || quotedMsg).mimetype || "";
 
     if (!mimeType || !mimeType.startsWith("image")) {
-      return await reply("🌻 Please reply to an image containing a QR code or barcode.");
+      return await safeReply(conn, mek.key.remoteJid, "🌻 Please reply to an image containing a QR code or barcode.");
     }
 
     // Download image
@@ -57,7 +57,7 @@ cmd({
     }
 
     // Send result
-    await conn.sendMessage(from, {
+    await safeSend(conn, from, {
       text: resultText,
       contextInfo: {
         mentionedJid: [sender],
@@ -84,7 +84,7 @@ cmd({
 
   } catch (error) {
     console.error(error);
-    reply("❌ An error occurred while reading the code. Please try again later.");
+    safeReply(conn, mek.key.remoteJid, "❌ An error occurred while reading the code. Please try again later.");
   }
 });
 
@@ -106,7 +106,7 @@ cmd({
     const mimeType = (quotedMsg.msg || quotedMsg).mimetype || "";
 
     if (!mimeType || !mimeType.startsWith("image")) {
-      return await reply("🌻 Please reply to an image containing a barcode.");
+      return await safeReply(conn, mek.key.remoteJid, "🌻 Please reply to an image containing a barcode.");
     }
 
     // Download image
@@ -154,7 +154,7 @@ cmd({
     }
 
     // Send result
-    await conn.sendMessage(from, {
+    await safeSend(conn, from, {
       text: resultText,
       contextInfo: {
         mentionedJid: [sender],
@@ -181,6 +181,6 @@ cmd({
 
   } catch (error) {
     console.error(error);
-    reply("❌ An error occurred while reading the barcode. Please try again later.");
+    safeReply(conn, mek.key.remoteJid, "❌ An error occurred while reading the barcode. Please try again later.");
   }
 });

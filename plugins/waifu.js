@@ -25,7 +25,7 @@ cmd({
       },
     };
 
-    await conn.sendMessage(from, {
+    await safeSend(conn, from, {
       image: { url: waifuUrl },
       caption: "*Here's your waifu! 💖*",
       contextInfo: newsletterContext,
@@ -33,6 +33,6 @@ cmd({
 
   } catch (error) {
     console.error("Error fetching waifu image:", error);
-    reply(`An error occurred while fetching your waifu. Please try again later.\n\nError: ${error.message || error}`);
+    safeReply(conn, mek.key.remoteJid, `An error occurred while fetching your waifu. Please try again later.\n\nError: ${error.message || error}`);
   }
 });

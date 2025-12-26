@@ -23,11 +23,11 @@ async (conn, mek, m, { from, args, reply, sender }) => {
     };
 
     try {
-        if (!args[0]) return reply('✏️ Please provide text. Example: .ephoto hello');
+        if (!args[0]) return safeReply(conn, mek.key.remoteJid, '✏️ Please provide text. Example: .ephoto hello');
         const inputText = args.join(' ');
 
         // Initial reaction
-        await conn.sendMessage(from,
+        await safeSend(conn, from,
             { react: { text: '⏳', key: m.key }, contextInfo: newsletterContext },
             { quoted: m }
         );
@@ -53,7 +53,7 @@ async (conn, mek, m, { from, args, reply, sender }) => {
         effects.forEach(e => menu += `┃▸ ${e.number}. ${e.name}\n`);
         menu += '╰━━━⪼\n\n📌 Reply with the number to select an effect.';
 
-        await conn.sendMessage(from,
+        await safeSend(conn, from,
             { text: menu, contextInfo: newsletterContext },
             { quoted: m }
         );
@@ -76,14 +76,14 @@ async (conn, mek, m, { from, args, reply, sender }) => {
             clearTimeout(timeout);
 
             // Acknowledge selection react
-            await conn.sendMessage(from,
+            await safeSend(conn, from,
                 { react: { text: '⬇️', key: recv.key }, contextInfo: newsletterContext },
                 { quoted: recv }
             );
             await robin.sendPresenceUpdate('recording', from);
 
             // Inform user generation started
-            await conn.sendMessage(from,
+            await safeSend(conn, from,
                 { text: `🖌️ Generating *${effect.name}*...`, contextInfo: newsletterContext },
                 { quoted: recv }
             );
@@ -93,14 +93,14 @@ async (conn, mek, m, { from, args, reply, sender }) => {
                 // Directly use the API URL since it returns an image
                 const apiUrl = `https://vapis.my.id/api/${effect.endpoint}?q=${encodeURIComponent(inputText)}`;
 
-                await conn.sendMessage(from,
+                await safeSend(conn, from,
                     { image: { url: apiUrl }, caption: `✅ *${effect.name}* generated successfully!`, contextInfo: newsletterContext },
                     { quoted: recv }
                 );
                 await robin.sendPresenceUpdate('recording', from);
             } catch (err) {
                 console.error('API Error:', err);
-                await conn.sendMessage(from,
+                await safeSend(conn, from,
                     { text: `❌ Failed to fetch image: ${err.message}`, contextInfo: newsletterContext },
                     { quoted: recv }
                 );
@@ -109,7 +109,7 @@ async (conn, mek, m, { from, args, reply, sender }) => {
         });
     } catch (e) {
         console.error('Command Error:', e);
-        await conn.sendMessage(from,
+        await safeSend(conn, from,
             { text: '❌ An error occurred. Please try again.', contextInfo: newsletterContext },
             { quoted: m }
         );
@@ -143,7 +143,7 @@ async (conn, mek, m, { from, args, reply, sender }) => {
     };
 
     try {
-        if (!args[0]) return reply('✏️ Please provide text. Example: .ephoto Hello World');
+        if (!args[0]) return safeReply(conn, mek.key.remoteJid, '✏️ Please provide text. Example: .ephoto Hello World');
         const inputText = args.join(' ');
 
         // Define all effects with their API endpoint suffixes
@@ -181,7 +181,7 @@ async (conn, mek, m, { from, args, reply, sender }) => {
             menu += `┃▸ ${e.number}. ${e.name}\n`;
         });
         menu += '╰━━━⪼\n\n📌 Reply with the number to select an effect.';
-        await conn.sendMessage(from,
+        await safeSend(conn, from,
             { text: menu, contextInfo: newsletterContext },
             { quoted: m }
         );
@@ -206,14 +206,14 @@ async (conn, mek, m, { from, args, reply, sender }) => {
             clearTimeout(timeout);
 
             // React to user choice
-            await conn.sendMessage(from,
+            await safeSend(conn, from,
                 { react: { text: '⬇️', key: recv.key }, contextInfo: newsletterContext },
                 { quoted: recv }
             );
             await robin.sendPresenceUpdate('recording', from);
 
             // Inform user generation started
-            await conn.sendMessage(from,
+            await safeSend(conn, from,
                 { text: `🖌️ Generating *${effect.name}*...`, contextInfo: newsletterContext },
                 { quoted: recv }
             );
@@ -231,7 +231,7 @@ async (conn, mek, m, { from, args, reply, sender }) => {
                 }
 
                 // Send the image by URL
-                await conn.sendMessage(from,
+                await safeSend(conn, from,
                     { image: { url: data.result.image_url }, caption: `✅ *${effect.name}* generated successfully!`, contextInfo: newsletterContext },
                     { quoted: recv }
                 );
@@ -239,7 +239,7 @@ async (conn, mek, m, { from, args, reply, sender }) => {
 
             } catch (err) {
                 console.error('API Error:', err);
-                await conn.sendMessage(from,
+                await safeSend(conn, from,
                     { text: `❌ Failed to generate image: ${err.message}`, contextInfo: newsletterContext },
                     { quoted: recv }
                 );
@@ -249,7 +249,7 @@ async (conn, mek, m, { from, args, reply, sender }) => {
 
     } catch (e) {
         console.error('Command Error:', e);
-        await conn.sendMessage(from,
+        await safeSend(conn, from,
             { text: '❌ An error occurred. Please try again.', contextInfo: newsletterContext },
             { quoted: m }
         );

@@ -12,7 +12,7 @@ cmd({
 }, async (conn, mek, m, { q, reply, sender }) => {
     try {
         if (!q) {
-            return reply(
+            return safeReply(conn, mek.key.remoteJid, 
 `┌─❖ 📸 *HANS BYTE IMAGE SEARCH* 📸
 │
 ├  🔎 Use:  *.gimage <query>*
@@ -21,14 +21,14 @@ cmd({
             );
         }
 
-        reply("⚡ *Fetching cool images...*\n_Just a sec while Hans Byte works its magic!_ ✨");
+        safeReply(conn, mek.key.remoteJid, "⚡ *Fetching cool images...*\n_Just a sec while Hans Byte works its magic!_ ✨");
 
         const apiUrl = `https://api.giftedtech.co.ke/api/search/googleimage?apikey=gifted_api_6kuv56877d&query=${encodeURIComponent(q)}`;
         const res = await axios.get(apiUrl);
         const data = res.data;
 
         if (!data.success || !data.results?.length)
-            return reply("😵 *No images found!* Try a different keyword.");
+            return safeReply(conn, mek.key.remoteJid, "😵 *No images found!* Try a different keyword.");
 
         // Pick 5 random images from results
         const shuffled = data.results.sort(() => 0.5 - Math.random());
@@ -47,7 +47,7 @@ cmd({
 
         // Send results one by one
         for (let img of selected) {
-            await conn.sendMessage(mek.chat, {
+            await safeSend(conn, mek.chat, {
                 image: { url: img },
                 caption: 
 `┌─❖ 🖼️ *IMAGE RESULT* 🖼️
@@ -62,6 +62,6 @@ cmd({
 
     } catch (e) {
         console.error("Google Image Error:", e.response?.status, e.response?.data || e.message);
-        reply("💥 *Oops!* Something went wrong fetching images.\nTry again later.");
+        safeReply(conn, mek.key.remoteJid, "💥 *Oops!* Something went wrong fetching images.\nTry again later.");
     }
 });

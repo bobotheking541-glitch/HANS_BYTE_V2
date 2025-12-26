@@ -13,7 +13,7 @@ cmd({
         const res = await fetch('https://api.giftedtech.co.ke/api/tools/proxy?apikey=gifted_api_6kuv56877d');
         const data = await res.json();
 
-        if (!data.success) return reply("❌ Failed to fetch proxies.");
+        if (!data.success) return safeReply(conn, mek.key.remoteJid, "❌ Failed to fetch proxies.");
 
         // Take top 5 proxies for neat formatting
         const proxies = data.results.slice(0, 5).map((p, i) => 
@@ -27,9 +27,9 @@ ${proxies}
 ╰━━━━━━━━━━━━━━━━━━━━╯
 `;
 
-        reply(message);
+        safeReply(conn, mek.key.remoteJid, message);
     } catch (err) {
         console.error(err);
-        reply("❌ Error fetching proxies.");
+        safeReply(conn, mek.key.remoteJid, "❌ Error fetching proxies.");
     }
 });

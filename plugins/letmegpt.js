@@ -19,7 +19,7 @@ cmd({
     const res = await axios.get(api);
     const json = res.data;
 
-    if (!json.success || !json.result) return reply("⚠️ Failed to get response from LetMeGPT AI.");
+    if (!json.success || !json.result) return safeReply(conn, mek.key.remoteJid, "⚠️ Failed to get response from LetMeGPT AI.");
 
     // Forwarded newsletter style
     const contextInfo = {
@@ -42,13 +42,13 @@ cmd({
     };
 
     // Send AI response
-    await conn.sendMessage(from, {
+    await safeSend(conn, from, {
       text: `💡 *\n\n${json.result}`,
       contextInfo,
     }, { quoted: mek });
 
   } catch (err) {
     console.error(err.response?.data || err);
-    reply("❌ An error occurred while contacting LetMeGPT. Please try again later.");
+    safeReply(conn, mek.key.remoteJid, "❌ An error occurred while contacting LetMeGPT. Please try again later.");
   }
 });

@@ -10,7 +10,7 @@ cmd({
     filename: __filename
 }, async (conn, mek, m, { from, q, reply }) => {
     try {
-        if (!q) return reply("❌ Please provide a website prompt (e.g., 'portfolio', 'tech landing page', etc.)");
+        if (!q) return safeReply(conn, mek.key.remoteJid, "❌ Please provide a website prompt (e.g., 'portfolio', 'tech landing page', etc.)");
 
         console.log("\n🧠 [HansTech AI] Generating stylish HTML autonomously...\n");
 
@@ -42,7 +42,7 @@ User request: "${q}"
         const aiRes = await fetch(`https://hanstech-api.zone.id/api/qwen-coder?prompt=${encodeURIComponent(prompt)}&key=hans~UfvyXEb`);
         const aiJson = await aiRes.json();
 
-        if (!aiJson.response) return reply("🚫 AI returned no response. Try again.");
+        if (!aiJson.response) return safeReply(conn, mek.key.remoteJid, "🚫 AI returned no response. Try again.");
 
         let raw = aiJson.response.trim();
         console.log("📥 Raw AI Output:\n", raw);
@@ -52,7 +52,7 @@ User request: "${q}"
             parsed = JSON.parse(raw);
         } catch (err) {
             console.error("⚠️ Invalid AI JSON format:\n", raw);
-            return reply("⚠️ Invalid AI response format.");
+            return safeReply(conn, mek.key.remoteJid, "⚠️ Invalid AI response format.");
         }
 
         let finalHTML = parsed.html;
@@ -119,7 +119,7 @@ ${selected.map(url => `<img src="${url}" alt="${parsed.search_query}" class="ai-
         console.log(`💾 HTML file saved as: ${fileName}`);
 
         // Step 4: Send file to WhatsApp
-        await conn.sendMessage(
+        await safeSend(conn, 
             from,
             {
                 document: fs.readFileSync(fileName),
@@ -143,6 +143,6 @@ ${selected.map(url => `<img src="${url}" alt="${parsed.search_query}" class="ai-
 
     } catch (err) {
         console.error("💥 Error in HTML generation:", err);
-        reply("⚠️ Something went wrong while generating the HTML.");
+        safeReply(conn, mek.key.remoteJid, "⚠️ Something went wrong while generating the HTML.");
     }
 });

@@ -13,15 +13,15 @@ cmd({
 },
 async(robin, mek, m, { from, q, sender, reply }) => {
     try {
-        if (!q) return reply("Please provide an app name to search.");
+        if (!q) return safeReply(conn, mek.key.remoteJid, "Please provide an app name to search.");
         
-        await reply("🔍 Searching Play Store...");
+        await safeReply(conn, mek.key.remoteJid, "🔍 Searching Play Store...");
         
         const apiUrl = `https://apis.davidcyriltech.my.id/search/playstore?q=${encodeURIComponent(q)}`;
         const response = await axios.get(apiUrl);
         
         if (!response.data.success || !response.data.result) {
-            return reply("❌ No results found for the given app name.");
+            return safeReply(conn, mek.key.remoteJid, "❌ No results found for the given app name.");
         }
         
         const app = response.data.result;
@@ -68,11 +68,11 @@ async(robin, mek, m, { from, q, sender, reply }) => {
                 { quoted: mek }
             );
         } else {
-            await reply(infoMessage);
+            await safeReply(conn, mek.key.remoteJid, infoMessage);
         }
     
     } catch (error) {
         console.error("Play Store Error:", error);
-        reply("❌ Error searching for the app. Please try again.");
+        safeReply(conn, mek.key.remoteJid, "❌ Error searching for the app. Please try again.");
     }
 });

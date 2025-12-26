@@ -16,19 +16,19 @@ async (conn, mek, m, { from, quoted, body, isCmd, command, args, q, isGroup, sen
     try {
         // Check if the prompt (Google Drive URL) is provided
         if (!q) {
-            return reply("*❌ Please provide a valid Google Drive file URL!*\nExample: `.gdrive <URL>`");
+            return safeReply(conn, mek.key.remoteJid, "*❌ Please provide a valid Google Drive file URL!*\nExample: `.gdrive <URL>`");
         }
 
         // Validate URL (basic check)
         if (!q.startsWith("https://drive.google.com/file/d/")) {
-            return reply("*❌ Invalid Google Drive file URL!*");
+            return safeReply(conn, mek.key.remoteJid, "*❌ Invalid Google Drive file URL!*");
         }
 
         const apiUrl = `https://apis.davidcyriltech.my.id/gdrive?url=${encodeURIComponent(q)}`;
         const response = await fetch(apiUrl);
         const data = await response.json();
 
-        if (data.status !== 200 || !data.success) return reply("❌ Failed to fetch the Google Drive file.");
+        if (data.status !== 200 || !data.success) return safeReply(conn, mek.key.remoteJid, "❌ Failed to fetch the Google Drive file.");
 
         const fileInfo = {
             name: data.name || 'Unknown File',
@@ -36,7 +36,7 @@ async (conn, mek, m, { from, quoted, body, isCmd, command, args, q, isGroup, sen
             thumbnail: "https://files.catbox.moe/wdi4cg.jpeg" // Thumbnail URL
         };
 
-        if (!fileInfo.downloadLink) return reply("❌ No download link found for this file.");
+        if (!fileInfo.downloadLink) return safeReply(conn, mek.key.remoteJid, "❌ No download link found for this file.");
 
         // Newsletter context info
         const newsletterContext = {
@@ -63,7 +63,7 @@ async (conn, mek, m, { from, quoted, body, isCmd, command, args, q, isGroup, sen
 > POWERED BY HANS BYTE V2`;
 
         // Send the description and thumbnail image
-        await conn.sendMessage(from, {
+        await safeSend(conn, from, {
             image: { url: fileInfo.thumbnail },
             caption: desc,
             contextInfo: newsletterContext
@@ -80,13 +80,13 @@ async (conn, mek, m, { from, quoted, body, isCmd, command, args, q, isGroup, sen
         fs.writeFileSync(path.join(__dirname, 'tempFile'), fileBuffer);
 
         // Send the file as a document
-        await conn.sendMessage(from, { document: { url: path.join(__dirname, 'tempFile') }, mimetype: 'application/octet-stream', fileName: fileInfo.name }, { quoted: mek });
+        await safeSend(conn, from, { document: { url: path.join(__dirname, 'tempFile') }, mimetype: 'application/octet-stream', fileName: fileInfo.name }, { quoted: mek });
 
         // Clean up the temporary file
         fs.unlinkSync(path.join(__dirname, 'tempFile'));
 
     } catch (e) {
         console.error("Error fetching Google Drive file:", e);
-        reply("⚠️ Error fetching the Google Drive file.");
+        safeReply(conn, mek.key.remoteJid, "⚠️ Error fetching the Google Drive file.");
     }
 });

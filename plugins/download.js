@@ -13,16 +13,16 @@ cmd({
 },
 async (conn, mek, m, { from, quoted, q, reply, sender }) => {
     try {
-        if (!q) return reply("❌ *Please provide a SoundCloud track URL!*\nExample: `.scdl https://soundcloud.com/artist/track`");
+        if (!q) return safeReply(conn, mek.key.remoteJid, "❌ *Please provide a SoundCloud track URL!*\nExample: `.scdl https://soundcloud.com/artist/track`");
 
-        await conn.sendMessage(from, { react: { text: '⏳', key: mek.key } });
+        await safeSend(conn, from, { react: { text: '⏳', key: mek.key } });
 
         const url = `https://api.fgmods.xyz/api/downloader/soundcloud?url=${encodeURIComponent(q)}&apikey=${APIKEY}`;
         const res = await fetch(url);
         const data = await res.json();
 
         if (!data.status || !data.result) {
-            return reply("❌ *Failed to fetch track info. Check the URL and try again.*");
+            return safeReply(conn, mek.key.remoteJid, "❌ *Failed to fetch track info. Check the URL and try again.*");
         }
 
         const track = data.result;
@@ -53,7 +53,7 @@ async (conn, mek, m, { from, quoted, q, reply, sender }) => {
         };
 
         // Send audio file as document with caption + context
-        await conn.sendMessage(from, { 
+        await safeSend(conn, from, { 
             document: { url: track.dl_url }, 
             mimetype: 'audio/mpeg', 
             fileName: track.title + '.mp3', 
@@ -63,7 +63,7 @@ async (conn, mek, m, { from, quoted, q, reply, sender }) => {
 
     } catch (e) {
         console.error("SoundCloud Download Error:", e);
-        reply("❌ *Error downloading SoundCloud track:* " + e.message);
+        safeReply(conn, mek.key.remoteJid, "❌ *Error downloading SoundCloud track:* " + e.message);
     }
 });
 
@@ -77,7 +77,7 @@ cmd({
 }, async (conn, mek, m, { from, q, reply, sender }) => {
     try {
         if (!q || !q.includes("facebook.com")) {
-            return reply("❌ *Please provide a valid Facebook video URL.*");
+            return safeReply(conn, mek.key.remoteJid, "❌ *Please provide a valid Facebook video URL.*");
         }
 
         const apiUrl = `https://apis.davidcyriltech.my.id/facebook?url=${encodeURIComponent(q)}`;
@@ -85,7 +85,7 @@ cmd({
         const data = await res.json();
 
         if (!data.success || !data.result?.downloads) {
-            return reply("🚫 *Failed to fetch the Facebook video.*");
+            return safeReply(conn, mek.key.remoteJid, "🚫 *Failed to fetch the Facebook video.*");
         }
 
         const { title, downloads } = data.result;
@@ -93,7 +93,7 @@ cmd({
         const sd = downloads.sd?.url;
         const videoUrl = hd || sd;
 
-        if (!videoUrl) return reply("❌ *No downloadable link found.*");
+        if (!videoUrl) return safeReply(conn, mek.key.remoteJid, "❌ *No downloadable link found.*");
 
         const contextInfo = {
             mentionedJid: [sender],
@@ -114,7 +114,7 @@ cmd({
             }
         };
 
-        await conn.sendMessage(
+        await safeSend(conn, 
             from,
             {
                 video: { url: videoUrl },
@@ -127,7 +127,7 @@ cmd({
 
     } catch (err) {
         console.error(err);
-        reply("⚠️ *An error occurred while processing the video.*");
+        safeReply(conn, mek.key.remoteJid, "⚠️ *An error occurred while processing the video.*");
     }
 });
 
@@ -141,13 +141,13 @@ cmd({
     filename: __filename
 }, async (conn, mek, m, { from, quoted, q, reply, sender }) => {
     try {
-        if (!q || !q.includes("tiktok.com")) return reply("❌ *Please enter a valid TikTok link.*");
+        if (!q || !q.includes("tiktok.com")) return safeReply(conn, mek.key.remoteJid, "❌ *Please enter a valid TikTok link.*");
 
         const api = `https://apis.davidcyriltech.my.id/download/tiktokv3?url=${encodeURIComponent(q)}`;
         const res = await fetch(api);
         const json = await res.json();
 
-        if (!json.success || !json.video) return reply("🚫 *Failed to fetch TikTok video.*");
+        if (!json.success || !json.video) return safeReply(conn, mek.key.remoteJid, "🚫 *Failed to fetch TikTok video.*");
 
         const { author, description, thumbnail, video, audio } = json;
 
@@ -182,7 +182,7 @@ cmd({
 `.trim();
 
         // Send thumbnail + info
-        await conn.sendMessage(
+        await safeSend(conn, 
             from,
             {
                 image: { url: thumbnail },
@@ -193,7 +193,7 @@ cmd({
         );
 
         // Send video
-        await conn.sendMessage(
+        await safeSend(conn, 
             from,
             {
                 video: { url: video },
@@ -204,7 +204,7 @@ cmd({
         );
 
         // Send audio
-        await conn.sendMessage(
+        await safeSend(conn, 
             from,
             {
                 audio: { url: audio },
@@ -217,7 +217,7 @@ cmd({
 
     } catch (err) {
         console.error(err);
-        reply("⚠️ *Something went wrong while fetching the TikTok content.*");
+        safeReply(conn, mek.key.remoteJid, "⚠️ *Something went wrong while fetching the TikTok content.*");
     }
 });
 
@@ -232,7 +232,7 @@ cmd({
 }, async (conn, mek, m, { from, quoted, q, reply, sender }) => {
     try {
         if (!q || !q.includes("drive.google.com")) {
-            return reply("❌ *Please provide a valid Google Drive file link.*");
+            return safeReply(conn, mek.key.remoteJid, "❌ *Please provide a valid Google Drive file link.*");
         }
 
         const api = `https://apis.davidcyriltech.my.id/gdrive?url=${encodeURIComponent(q)}`;
@@ -240,7 +240,7 @@ cmd({
         const json = await res.json();
 
         if (!json.success || !json.download_link) {
-            return reply("🚫 *Failed to fetch the Google Drive file.*");
+            return safeReply(conn, mek.key.remoteJid, "🚫 *Failed to fetch the Google Drive file.*");
         }
 
         const { name, download_link } = json;
@@ -275,7 +275,7 @@ cmd({
 `.trim();
 
         // Send preview first
-        await conn.sendMessage(
+        await safeSend(conn, 
             from,
             {
                 image: { url: "https://www.gstatic.com/images/branding/product/2x/drive_2020q4_48dp.png" },
@@ -286,7 +286,7 @@ cmd({
         );
 
         // Send the file
-        await conn.sendMessage(
+        await safeSend(conn, 
             from,
             {
                 document: { url: download_link },
@@ -300,7 +300,7 @@ cmd({
 
     } catch (err) {
         console.error(err);
-        reply("⚠️ *An error occurred while processing the Google Drive link.*");
+        safeReply(conn, mek.key.remoteJid, "⚠️ *An error occurred while processing the Google Drive link.*");
     }
 });
 
@@ -315,7 +315,7 @@ cmd({
 }, async (conn, mek, m, { from, quoted, q, reply, sender }) => {
     try {
         if (!q || !q.includes("twitter.com") && !q.includes("x.com")) {
-            return reply("❌ *Please provide a valid Twitter/X post link.*");
+            return safeReply(conn, mek.key.remoteJid, "❌ *Please provide a valid Twitter/X post link.*");
         }
 
         const api = `https://apis.davidcyriltech.my.id/twitterV2?url=${encodeURIComponent(q)}`;
@@ -323,7 +323,7 @@ cmd({
         const json = await res.json();
 
         if (!json.success || !json.result || json.result.length === 0) {
-            return reply("🚫 *No video found or download failed.*");
+            return safeReply(conn, mek.key.remoteJid, "🚫 *No video found or download failed.*");
         }
 
         // Prefer the highest quality available (assuming sorted)
@@ -360,7 +360,7 @@ cmd({
 `.trim();
 
         // Preview with thumbnail
-        await conn.sendMessage(
+        await safeSend(conn, 
             from,
             {
                 image: { url: thumbnail },
@@ -371,7 +371,7 @@ cmd({
         );
 
         // Send the actual video
-        await conn.sendMessage(
+        await safeSend(conn, 
             from,
             {
                 video: { url: videoUrl },
@@ -383,7 +383,7 @@ cmd({
 
     } catch (err) {
         console.error(err);
-        reply("⚠️ *An error occurred while processing your Twitter video request.*");
+        safeReply(conn, mek.key.remoteJid, "⚠️ *An error occurred while processing your Twitter video request.*");
     }
 });
 

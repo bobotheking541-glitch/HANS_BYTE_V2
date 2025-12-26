@@ -2,4 +2,13 @@ node_modules
 sessions
 sessions/
 store/message_count.json
+store/message.json
 config.env
+.env
+database.db
+store/
+undefined.jpg
+package-lock.json
+buffer.jpg
+buffer.mp3
+buffer.mp4

@@ -70,10 +70,10 @@ Is Owner  : ${isOwner ? "✅ Yes" : "❌ No"}
 Is Admin  : ${isAdmin ? "✅ Yes" : "❌ No"}
 Is Dev    : ${isDev ? "✅ Yes" : "❌ No"}
 `;
-    await reply(report);
+    await safeReply(conn, mek.key.remoteJid, report);
 
   } catch (err) {
-    try { await reply("Error: " + String(err)); } catch {}
+    try { await safeReply(conn, mek.key.remoteJid, "Error: " + String(err)); } catch {}
     console.error("[SYSTEM-TEST ERROR]:", err);
   }
 });

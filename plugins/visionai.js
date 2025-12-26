@@ -23,7 +23,7 @@ cmd({
       if (q && q.match(/^https?:\/\//i)) {
         imageUrl = q;
         q = "";
-      } else return await reply("❌ Please reply to an image or provide a valid image URL.");
+      } else return await safeReply(conn, mek.key.remoteJid, "❌ Please reply to an image or provide a valid image URL.");
     } else {
       const imageBuffer = await quotedMsg.download();
 
@@ -48,7 +48,7 @@ cmd({
         if (!imageUrl || !imageUrl.startsWith("http")) throw new Error("Catbox did not return a valid URL.");
       } catch (catErr) {
         console.error("Catbox Upload Error:", catErr.response?.data || catErr);
-        return reply("❌ Failed to upload image to Catbox. Check console for details.");
+        return safeReply(conn, mek.key.remoteJid, "❌ Failed to upload image to Catbox. Check console for details.");
       } finally {
         fs.existsSync(tempImagePath) && fs.unlinkSync(tempImagePath);
       }
@@ -66,10 +66,10 @@ cmd({
       const json = res.data;
       if (!json?.success || !json?.result) {
         console.error("Mistral API returned invalid data:", json);
-        return reply("⚠️ Failed to get description from Mistral Vision AI. Check console for details.");
+        return safeReply(conn, mek.key.remoteJid, "⚠️ Failed to get description from Mistral Vision AI. Check console for details.");
       }
 
-      await conn.sendMessage(from, {
+      await safeSend(conn, from, {
         text: `💡 *Mistral Vision AI Description:*\n\n${json.result}`,
         contextInfo: {
           mentionedJid: [sender],
@@ -92,11 +92,11 @@ cmd({
       }, { quoted: mek });
     } catch (apiErr) {
       console.error("Mistral Vision API Error:", apiErr.response?.data || apiErr);
-      return reply("❌ Error calling Mistral Vision API. Check console for details.");
+      return safeReply(conn, mek.key.remoteJid, "❌ Error calling Mistral Vision API. Check console for details.");
     }
 
   } catch (err) {
     console.error("General Error:", err.response?.data || err);
-    reply("❌ An unexpected error occurred. Check console for details.");
+    safeReply(conn, mek.key.remoteJid, "❌ An unexpected error occurred. Check console for details.");
   }
 });

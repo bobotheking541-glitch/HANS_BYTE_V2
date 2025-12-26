@@ -14,13 +14,13 @@ cmd({
     filename: __filename,
 }, async (conn, mek, m, { q, reply, sender }) => {
     try {
-        if (!q) return reply("🌐 *Missing URL!*\n\nUsage: .web2zip https://example.com");
+        if (!q) return safeReply(conn, mek.key.remoteJid, "🌐 *Missing URL!*\n\nUsage: .web2zip https://example.com");
 
         if (!/^https?:\/\/.+/i.test(q)) {
-            return reply("🚫 *Invalid URL!*\nMake sure it starts with http:// or https://");
+            return safeReply(conn, mek.key.remoteJid, "🚫 *Invalid URL!*\nMake sure it starts with http:// or https://");
         }
 
-        reply("📦 *Generating ZIP archive of the site...*\nHold on tight! ⚙️");
+        safeReply(conn, mek.key.remoteJid, "📦 *Generating ZIP archive of the site...*\nHold on tight! ⚙️");
 
         const apiUrl = `https://apis.davidcyriltech.my.id/tools/downloadweb?url=${encodeURIComponent(q)}`;
         const { data } = await axios.get(apiUrl);
@@ -31,7 +31,7 @@ cmd({
             !data.response?.success ||
             !data.response.downloadUrl
         ) {
-            return reply("❌ *API Error!* Could not generate the ZIP.\nTry again later or check the URL.");
+            return safeReply(conn, mek.key.remoteJid, "❌ *API Error!* Could not generate the ZIP.\nTry again later or check the URL.");
         }
 
         const downloadUrl = data.response.downloadUrl;
@@ -48,7 +48,7 @@ cmd({
             },
         };
 
-        await conn.sendMessage(mek.chat, {
+        await safeSend(conn, mek.chat, {
             text:
                 `✅ *Website Saved!*\n\n` +
                 `🌐 *Site:* ${q}\n` +
@@ -72,7 +72,7 @@ cmd({
         });
 
         // Send the ZIP file
-        await conn.sendMessage(mek.chat, {
+        await safeSend(conn, mek.chat, {
             document: fs.readFileSync(tempPath),
             mimetype: 'application/zip',
             fileName: `website-archive.zip`,
@@ -95,6 +95,6 @@ cmd({
         }
 
         errorMsg += "\n\nTry again later or with another URL.";
-        reply(errorMsg);
+        safeReply(conn, mek.key.remoteJid, errorMsg);
     }
 });

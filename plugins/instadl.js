@@ -11,16 +11,16 @@ cmd({
 },
 async (conn, mek, m, { from, reply, q, sender }) => {
     try {
-        if (!q) return reply("*❌ Please provide an Instagram URL!*\nExample: .ig <URL>");
+        if (!q) return safeReply(conn, mek.key.remoteJid, "*❌ Please provide an Instagram URL!*\nExample: .ig <URL>");
 
         if (!q.match(/^https?:\/\/(www\.)?instagram\.com\/(reel|p|tv)\/[A-Za-z0-9_-]+/)) {
-            return reply("*❌ Invalid Instagram URL!*");
+            return safeReply(conn, mek.key.remoteJid, "*❌ Invalid Instagram URL!*");
         }
 
         const apiUrl = `https://hanstech-api.zone.id/api/instagram?url=${encodeURIComponent(q)}&key=hans~UfvyXEb`;
         const data = await (await fetch(apiUrl)).json();
 
-        if (data.status !== "success") return reply("❌ Failed to fetch Instagram post.");
+        if (data.status !== "success") return safeReply(conn, mek.key.remoteJid, "❌ Failed to fetch Instagram post.");
 
         const media = data.media[0];
         const postInfo = {
@@ -47,14 +47,14 @@ async (conn, mek, m, { from, reply, q, sender }) => {
 ╰━✦❘༻ *HANS BYTE* ༺❘✦━╯`;
 
         if (media.type === "video") {
-            await conn.sendMessage(from, { video: { url: media.url }, caption: desc }, { quoted: mek });
+            await safeSend(conn, from, { video: { url: media.url }, caption: desc }, { quoted: mek });
         } else if (media.type === "image") {
-            await conn.sendMessage(from, { image: { url: media.url }, caption: desc }, { quoted: mek });
+            await safeSend(conn, from, { image: { url: media.url }, caption: desc }, { quoted: mek });
         } else {
-            return reply("❌ Unsupported media type.");
+            return safeReply(conn, mek.key.remoteJid, "❌ Unsupported media type.");
         }
     } catch (e) {
         console.error("Error fetching Instagram post:", e);
-        reply("⚠️ Error fetching the Instagram post.");
+        safeReply(conn, mek.key.remoteJid, "⚠️ Error fetching the Instagram post.");
     }
 });

@@ -26,7 +26,7 @@ cmd({
       "";
 
     if (!mimeType.startsWith("image/")) {
-      return reply("🌻 Please reply to an image.");
+      return safeReply(conn, mek.key.remoteJid, "🌻 Please reply to an image.");
     }
 
     
@@ -68,14 +68,14 @@ cmd({
       isForwarded: true
     };
 
-    await conn.sendMessage(from, {
+    await safeSend(conn, from, {
       image: { url: imageUrl },
       caption: `*Image Uploaded Successfully 📸*\nSize: ${imageBuffer.length} Byte(s)\n*URL:* ${imageUrl}\n\n> ⚖️ Uploaded via 𝐇𝐀𝐍𝐒 𝐁𝐘𝐓𝐄 𝐌𝐃`,
       contextInfo
     });
 
   } catch (err) {
-    reply("Error: " + err);
+    safeReply(conn, mek.key.remoteJid, "Error: " + err);
     console.error("Error occurred:", err);
   }
 });

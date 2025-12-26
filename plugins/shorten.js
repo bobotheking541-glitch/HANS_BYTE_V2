@@ -13,13 +13,13 @@ cmd({
     filename: __filename
 }, async (conn, mek, m, { reply, q }) => {
     try {
-        if (!q) return reply("❌ Please provide a URL to shorten.\nExample: tinyurl https://example.com");
+        if (!q) return safeReply(conn, mek.key.remoteJid, "❌ Please provide a URL to shorten.\nExample: tinyurl https://example.com");
 
         const url = encodeURIComponent(q);
         const res = await fetch(`https://api.giftedtech.co.ke/api/tools/tinyurl?apikey=${API_KEY}&url=${url}`);
         const data = await res.json();
 
-        if (!data.success || !data.result) return reply("❌ Failed to shorten URL.");
+        if (!data.success || !data.result) return safeReply(conn, mek.key.remoteJid, "❌ Failed to shorten URL.");
 
         const msg = `
 ╭━[   *TINYURL GENERATED*   ]━╮
@@ -28,10 +28,10 @@ cmd({
 ┃ 🧊 *Status:* Success
 ╰━━━━━━━━━━━━━━━━━━━━╯
 `;
-        reply(msg);
+        safeReply(conn, mek.key.remoteJid, msg);
     } catch (err) {
         console.error(err);
-        reply("❌ Error while generating TinyURL.");
+        safeReply(conn, mek.key.remoteJid, "❌ Error while generating TinyURL.");
     }
 });
 
@@ -45,13 +45,13 @@ cmd({
     filename: __filename
 }, async (conn, mek, m, { reply, q }) => {
     try {
-        if (!q) return reply("❌ Please provide a URL.\nExample: cleanuri https://example.com");
+        if (!q) return safeReply(conn, mek.key.remoteJid, "❌ Please provide a URL.\nExample: cleanuri https://example.com");
 
         const url = encodeURIComponent(q);
         const res = await fetch(`https://api.giftedtech.co.ke/api/tools/cleanuri?apikey=${API_KEY}&url=${url}`);
         const data = await res.json();
 
-        if (!data.success || !data.result) return reply("❌ Failed to shorten URL.");
+        if (!data.success || !data.result) return safeReply(conn, mek.key.remoteJid, "❌ Failed to shorten URL.");
 
         const msg = `
 ╭━[   *CLEANURI GENERATED*   ]━╮
@@ -60,10 +60,10 @@ cmd({
 ┃ 🧊 *Status:* Success
 ╰━━━━━━━━━━━━━━━━━━━━╯
 `;
-        reply(msg);
+        safeReply(conn, mek.key.remoteJid, msg);
     } catch (err) {
         console.error(err);
-        reply("❌ Error while generating CleanURI.");
+        safeReply(conn, mek.key.remoteJid, "❌ Error while generating CleanURI.");
     }
 });
 
@@ -77,13 +77,13 @@ cmd({
     filename: __filename
 }, async (conn, mek, m, { reply, q }) => {
     try {
-        if (!q) return reply("❌ Please provide a URL.\nExample: vurl https://example.com");
+        if (!q) return safeReply(conn, mek.key.remoteJid, "❌ Please provide a URL.\nExample: vurl https://example.com");
 
         const url = encodeURIComponent(q);
         const res = await fetch(`https://api.giftedtech.co.ke/api/tools/vurl?apikey=${API_KEY}&url=${url}`);
         const data = await res.json();
 
-        if (!data.success || !data.result) return reply("❌ Failed to shorten URL.");
+        if (!data.success || !data.result) return safeReply(conn, mek.key.remoteJid, "❌ Failed to shorten URL.");
 
         const msg = `
 ╭━[   *VURL GENERATED*   ]━╮
@@ -92,10 +92,10 @@ cmd({
 ┃ 🧊 *Status:* Success
 ╰━━━━━━━━━━━━━━━━━━━━╯
 `;
-        reply(msg);
+        safeReply(conn, mek.key.remoteJid, msg);
     } catch (err) {
         console.error(err);
-        reply("❌ Error while generating VURL.");
+        safeReply(conn, mek.key.remoteJid, "❌ Error while generating VURL.");
     }
 });
 

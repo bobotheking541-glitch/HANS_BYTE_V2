@@ -10,11 +10,11 @@ cmd({
 }, async (conn, mek, m, { from, args, reply }) => {
   try {
     const reference = args.join(' ').trim();
-    if (!reference) return reply('🙏 Please provide a Bible reference. Example: `bible John 3:16`');
+    if (!reference) return safeReply(conn, mek.key.remoteJid, '🙏 Please provide a Bible reference. Example: `bible John 3:16`');
 
     // Parse "Book chapter:verse[-end]"
     const refMatch = reference.match(/^(.+?)\s+(\d+)(?::(\d+(?:-\d+)?))?$/i);
-    if (!refMatch) return reply('⚠️ Could not parse that reference. Use format like `John 3:16` or `Genesis 1`.');
+    if (!refMatch) return safeReply(conn, mek.key.remoteJid, '⚠️ Could not parse that reference. Use format like `John 3:16` or `Genesis 1`.');
 
     const book = refMatch[1].trim();
     const chapter = parseInt(refMatch[2], 10);
@@ -36,7 +36,7 @@ cmd({
 
     const res = await fetchJson(apiUrl);
     if (!res || res.status !== 'success' || !res.data) {
-      return reply('⚠️ Could not fetch the verse. Please check your reference.');
+      return safeReply(conn, mek.key.remoteJid, '⚠️ Could not fetch the verse. Please check your reference.');
     }
 
     // Format message
@@ -46,10 +46,10 @@ cmd({
     let message = `✝️ *${refText}* — *${res.data.version}*\n\n`;
     message += `${res.data.text}\n\n🕊️ *May God bless you as you meditate on His Word.*`;
 
-    await conn.sendMessage(from, { text: message }, { quoted: mek });
+    await safeSend(conn, from, { text: message }, { quoted: mek });
 
   } catch (err) {
     console.error(err);
-    return reply(`⚠️ Error: ${err.message || err}\n\n🙏 Try again later.`);
+    return safeReply(conn, mek.key.remoteJid, `⚠️ Error: ${err.message || err}\n\n🙏 Try again later.`);
   }
 });

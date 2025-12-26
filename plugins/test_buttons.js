@@ -16,14 +16,14 @@ cmd({
     try {
       await suki.sendMessage(jid, payload, { quoted: mek })
       console.log(`✅ ${name}`)
-      await reply(`✅ Sent — ${name}`)
+      await safeReply(conn, mek.key.remoteJid, `✅ Sent — ${name}`)
     } catch (err) {
       console.error(`❌ ${name}`, err)
-      await reply(`❌ ${name}\n\`\`\`\n${err.message}\n\`\`\``)
+      await safeReply(conn, mek.key.remoteJid, `❌ ${name}\n\`\`\`\n${err.message}\n\`\`\``)
     }
   }
 
-  await reply('🧩 Sending all button message types...')
+  await safeReply(conn, mek.key.remoteJid, '🧩 Sending all button message types...')
 
   // 1️⃣ Template Buttons Message
   await step('Template Buttons Message', {
@@ -290,5 +290,5 @@ cmd({
     ]
   })
 
-  await reply('✅ All message types tested successfully (Template + Interactive + PIX + PAY).')
+  await safeReply(conn, mek.key.remoteJid, '✅ All message types tested successfully (Template + Interactive + PIX + PAY).')
 })

@@ -11,7 +11,7 @@ cmd({
 async (conn, mek, m, { from, args }) => {
   try {
     if (!args.length) {
-      return await conn.sendMessage(from, {
+      return await safeSend(conn, from, {
         text: "📌 Usage: *!igstalk [username]*\nExample: !igstalk giftedtechnexus"
       }, { quoted: mek });
     }
@@ -21,7 +21,7 @@ async (conn, mek, m, { from, args }) => {
     const { data } = await axios.get(apiUrl);
 
     if (!data.success || !data.result) {
-      return await conn.sendMessage(from, {
+      return await safeSend(conn, from, {
         text: `❌ No profile found for @${username}`
       }, { quoted: mek });
     }
@@ -44,7 +44,7 @@ async (conn, mek, m, { from, args }) => {
                     `👥 *Followers:* ${followers}\n` +
                     `➡️ *Following:* ${following}`;
 
-    await conn.sendMessage(from, {
+    await safeSend(conn, from, {
       image: { url: profilePicUrl },
       caption,
       contextInfo: {
@@ -60,7 +60,7 @@ async (conn, mek, m, { from, args }) => {
 
   } catch (error) {
     console.error("❌ IGStalk error:", error.message);
-    await conn.sendMessage(from, {
+    await safeSend(conn, from, {
       text: `❌ Error: ${error.message}`
     }, { quoted: mek });
   }

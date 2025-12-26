@@ -10,7 +10,7 @@ cmd({
     filename: __filename
 }, async (conn, mek, m, { from, q, reply, sender }) => {
     try {
-        if (!q) return reply("❌ *Please provide a GoFile URL.*");
+        if (!q) return safeReply(conn, mek.key.remoteJid, "❌ *Please provide a GoFile URL.*");
 
         // Call GiftedTech GoFile download API
         const api = `https://api.giftedtech.co.ke/api/download/gofile?apikey=gifted_api_6kuv56877d&url=${encodeURIComponent(q)}`;
@@ -18,7 +18,7 @@ cmd({
         const json = await res.json();
 
         if (!json.success || !json.result || !json.result.children) {
-            return reply("🚫 *Failed to get files from GoFile.*");
+            return safeReply(conn, mek.key.remoteJid, "🚫 *Failed to get files from GoFile.*");
         }
 
         const contextInfo = {
@@ -61,7 +61,7 @@ cmd({
 `.trim();
 
             // Send the info first
-            await conn.sendMessage(
+            await safeSend(conn, 
                 from,
                 { text: infoMsg, contextInfo },
                 { quoted: mek }
@@ -71,7 +71,7 @@ cmd({
             const fileRes = await fetch(file.link);
             const fileBuffer = await fileRes.buffer();
 
-            await conn.sendMessage(
+            await safeSend(conn, 
                 from,
                 {
                     document: fileBuffer,
@@ -86,6 +86,6 @@ cmd({
 
     } catch (err) {
         console.error(err);
-        reply("⚠️ *An error occurred while downloading the GoFile file.*");
+        safeReply(conn, mek.key.remoteJid, "⚠️ *An error occurred while downloading the GoFile file.*");
     }
 });

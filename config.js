@@ -1,5 +1,5 @@
 const fs = require('fs');
-if (fs.existsSync('config.env')) require('dotenv').config({ path: './config.env' });
+if (fs.existsSync('.env')) require('dotenv').config({ path: './.env' });
 
 function convertToBool(text, fault = 'true') {
     return text === fault ? true : false;
@@ -45,8 +45,8 @@ module.exports = {
     AUTO_REPLY_TEXT: process.env.AUTO_REPLY_TEXT || "",
     AUTO_REACT: process.env.AUTO_REACT || "false",
     OWNER_REACT: process.env.OWNER_REACT || "false",
-
-    // Anti delete & auto like
+    HEART_REACT: process.env.HEART_REACT || "false",
+        // Anti delete & auto like
     ANTI_DEL_PATH: process.env.ANTI_DEL_PATH || "log",
     AUTOLIKESTATUS: process.env.AUTOLIKESTATUS || "true",
     AUTO_STATUS_REPLY: process.env.AUTO_STATUS_REPLY || "false",

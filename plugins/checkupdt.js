@@ -72,7 +72,7 @@ Use *.update* to update.`;
       `⭐ *GitHub Repo:* ${githubRepo}\n👤 *Owner:* HANS TECH\n\n${updateMessage}\n\n🚀 *Hey! Don't forget to fork & star the repo!*`;
 
     // Send the status message with an image
-    await conn.sendMessage(from, {
+    await safeSend(conn, from, {
       image: { url: 'https://i.ibb.co/FLSgNhW9/Free.png' },
       caption: statusMessage,
       contextInfo: {
@@ -88,6 +88,6 @@ Use *.update* to update.`;
     }, { quoted: mek });
   } catch (error) {
     console.error('Error fetching version info:', error);
-    reply('❌ An error occurred while checking the bot version.');
+    safeReply(conn, mek.key.remoteJid, '❌ An error occurred while checking the bot version.');
   }
 });

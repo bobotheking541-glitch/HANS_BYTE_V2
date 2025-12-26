@@ -113,7 +113,7 @@ function toArray(value) {
 
 async function doReact(emoji, m, conn) {
     try {
-        await conn.sendMessage(m.key.remoteJid, {
+        await safeSend(conn, m.key.remoteJid, {
             react: { text: emoji, key: m.key },
         });
     } catch (e) {
@@ -144,7 +144,7 @@ cmd({
 async (conn, mek, m, { from, isGroup, sender, args, reply }) => {
     try {
         if (!isGroup) {
-            return reply("❌ This command only works in group chats!");
+            return safeReply(conn, mek.key.remoteJid, "❌ This command only works in group chats!");
         }
 
         const metadata = await conn.groupMetadata(from);
@@ -152,7 +152,7 @@ async (conn, mek, m, { from, isGroup, sender, args, reply }) => {
         const resolvedSender = resolveToJid(sender, lidMap);
 
         if (!isUserAdmin(resolvedSender, metadata)) {
-            return conn.sendMessage(from, {
+            return safeSend(conn, from, {
                 text: "❌ Only *group admins* can update the group name.",
                 contextInfo: { ...newsletterContext, mentionedJid: [sender] },
             }, { quoted: mek });
@@ -162,7 +162,7 @@ async (conn, mek, m, { from, isGroup, sender, args, reply }) => {
 
         const newName = args.join(" ").trim();
         if (!newName) {
-            return conn.sendMessage(from, {
+            return safeSend(conn, from, {
                 text: "❌ Please provide the new group name.\n\n📌 *Example:* `.setname Awesome Tech Group`",
                 contextInfo: newsletterContext
             }, { quoted: mek });
@@ -170,7 +170,7 @@ async (conn, mek, m, { from, isGroup, sender, args, reply }) => {
 
         await conn.groupUpdateSubject(from, newName);
 
-        await conn.sendMessage(from, {
+        await safeSend(conn, from, {
             text: `✅ Group name updated successfully to:\n*${newName}*`,
             contextInfo: { ...newsletterContext, mentionedJid: [sender] },
         }, { quoted: mek });
@@ -180,7 +180,7 @@ async (conn, mek, m, { from, isGroup, sender, args, reply }) => {
     } catch (error) {
         console.error("UpdateName Error:", error);
         await doReact("❌", m, conn);
-        await conn.sendMessage(from, {
+        await safeSend(conn, from, {
             text: "❌ Failed to update group name. Make sure I have admin rights!",
             contextInfo: newsletterContext
         }, { quoted: mek });
@@ -198,7 +198,7 @@ cmd({
 async (conn, mek, m, { from, isGroup, sender, args, reply }) => {
     try {
         if (!isGroup) {
-            return reply("❌ This command only works in group chats!");
+            return safeReply(conn, mek.key.remoteJid, "❌ This command only works in group chats!");
         }
 
         const metadata = await conn.groupMetadata(from);
@@ -206,7 +206,7 @@ async (conn, mek, m, { from, isGroup, sender, args, reply }) => {
         const resolvedSender = resolveToJid(sender, lidMap);
 
         if (!isUserAdmin(resolvedSender, metadata)) {
-            return conn.sendMessage(from, {
+            return safeSend(conn, from, {
                 text: "❌ Only *group admins* can update the group description.",
                 contextInfo: { ...newsletterContext, mentionedJid: [sender] },
             }, { quoted: mek });
@@ -216,7 +216,7 @@ async (conn, mek, m, { from, isGroup, sender, args, reply }) => {
 
         const newDesc = args.join(" ").trim();
         if (!newDesc) {
-            return conn.sendMessage(from, {
+            return safeSend(conn, from, {
                 text: "❌ Please provide the new group description.\n\n📌 *Example:* `.setdesc Welcome to Awesome Tech Group 🚀`",
                 contextInfo: { ...newsletterContext, mentionedJid: [sender] },
             }, { quoted: mek });
@@ -224,7 +224,7 @@ async (conn, mek, m, { from, isGroup, sender, args, reply }) => {
 
         await conn.groupUpdateDescription(from, newDesc);
 
-        await conn.sendMessage(from, {
+        await safeSend(conn, from, {
             text: `✅ Group description updated successfully to:\n*${newDesc}*`,
             contextInfo: { ...newsletterContext, mentionedJid: [sender] },
         }, { quoted: mek });
@@ -234,7 +234,7 @@ async (conn, mek, m, { from, isGroup, sender, args, reply }) => {
     } catch (error) {
         console.error("UpdateDesc Error:", error);
         await doReact("❌", m, conn);
-        await conn.sendMessage(from, {
+        await safeSend(conn, from, {
             text: "❌ Failed to update group description. Make sure I have admin rights!",
             contextInfo: { ...newsletterContext, mentionedJid: [sender] },
         }, { quoted: mek });
@@ -248,14 +248,14 @@ cmd({
     category: "group",
     filename: __filename
 }, async (conn, mek, m, { from, isGroup, sender, reply, args }) => {
-    if (!isGroup) return reply("❌ This command works only in groups!");
+    if (!isGroup) return safeReply(conn, mek.key.remoteJid, "❌ This command works only in groups!");
     
     const metadata = await conn.groupMetadata(from);
     const lidMap = loadLidMappings(metadata);
     const resolvedSender = resolveToJid(sender, lidMap);
 
     if (!isUserAdmin(resolvedSender, metadata))
-        return reply("⚠️ Only group admins can promote!");
+        return safeReply(conn, mek.key.remoteJid, "⚠️ Only group admins can promote!");
 
     let targetJid =
         m.mentionedJid?.[0] ||
@@ -263,12 +263,12 @@ cmd({
         (m.message.extendedTextMessage?.contextInfo?.participant);
 
     if (!targetJid)
-        return reply("🔎 Please mention, pass number, or reply to the user you want to promote!");
+        return safeReply(conn, mek.key.remoteJid, "🔎 Please mention, pass number, or reply to the user you want to promote!");
 
     const resolvedTarget = resolveToJid(targetJid, lidMap);
 
     if (isUserAdmin(resolvedTarget, metadata))
-        return reply(`⚠️ @${jidToNumber(targetJid)} is already an admin!`, {}, { mentions: [targetJid] });
+        return safeReply(conn, mek.key.remoteJid, `⚠️ @${jidToNumber(targetJid)} is already an admin!`, {}, { mentions: [targetJid] });
 
     await conn.groupParticipantsUpdate(from, [targetJid], "promote");
 
@@ -285,7 +285,7 @@ cmd({
 🔥 Powered by HANS BYTE V2
 ━━━━━━━━━━━━━━━━━━━━━━━
     `;
-    await conn.sendMessage(from, { text: out, mentions: [targetJid, sender], contextInfo: newsletterContext }, { quoted: mek });
+    await safeSend(conn, from, { text: out, mentions: [targetJid, sender], contextInfo: newsletterContext }, { quoted: mek });
     await doReact("🔼", m, conn);
 });
 
@@ -296,14 +296,14 @@ cmd({
     category: "group",
     filename: __filename
 }, async (conn, mek, m, { from, isGroup, sender, reply, args }) => {
-    if (!isGroup) return reply("❌ This command works only in groups!");
+    if (!isGroup) return safeReply(conn, mek.key.remoteJid, "❌ This command works only in groups!");
     
     const metadata = await conn.groupMetadata(from);
     const lidMap = loadLidMappings(metadata);
     const resolvedSender = resolveToJid(sender, lidMap);
 
     if (!isUserAdmin(resolvedSender, metadata))
-        return reply("⚠️ Only group admins can demote!");
+        return safeReply(conn, mek.key.remoteJid, "⚠️ Only group admins can demote!");
 
     let targetJid =
         m.mentionedJid?.[0] ||
@@ -311,12 +311,12 @@ cmd({
         (m.message.extendedTextMessage?.contextInfo?.participant);
 
     if (!targetJid)
-        return reply("🔎 Please mention, pass number, or reply to the user you want to demote!");
+        return safeReply(conn, mek.key.remoteJid, "🔎 Please mention, pass number, or reply to the user you want to demote!");
 
     const resolvedTarget = resolveToJid(targetJid, lidMap);
 
     if (!isUserAdmin(resolvedTarget, metadata))
-        return reply(`⚠️ @${jidToNumber(targetJid)} is not an admin!`, {}, { mentions: [targetJid] });
+        return safeReply(conn, mek.key.remoteJid, `⚠️ @${jidToNumber(targetJid)} is not an admin!`, {}, { mentions: [targetJid] });
 
     await conn.groupParticipantsUpdate(from, [targetJid], "demote");
 
@@ -333,7 +333,7 @@ cmd({
 🔥 Powered by HANS BYTE V2
 ━━━━━━━━━━━━━━━━━━━━━━━
     `;
-    await conn.sendMessage(from, { text: out, mentions: [targetJid, sender], contextInfo: newsletterContext }, { quoted: mek });
+    await safeSend(conn, from, { text: out, mentions: [targetJid, sender], contextInfo: newsletterContext }, { quoted: mek });
     await doReact("🔽", m, conn);
 });
 
@@ -345,18 +345,18 @@ cmd({
     filename: __filename
 },
 async (conn, mek, m, { from, isGroup, sender, reply }) => {
-    if (!isGroup) return reply("❌ Group only!");
+    if (!isGroup) return safeReply(conn, mek.key.remoteJid, "❌ Group only!");
     
     const metadata = await conn.groupMetadata(from);
     const lidMap = loadLidMappings(metadata);
     const resolvedSender = resolveToJid(sender, lidMap);
 
     if (!isUserAdmin(resolvedSender, metadata))
-        return reply("❌ Only admins can mute group!");
+        return safeReply(conn, mek.key.remoteJid, "❌ Only admins can mute group!");
 
     await conn.groupSettingUpdate(from, "announcement");
     await doReact("🔇", m, conn);
-    reply("✅ Group muted. Only admins can message now.");
+    safeReply(conn, mek.key.remoteJid, "✅ Group muted. Only admins can message now.");
 });
 
 cmd({
@@ -367,18 +367,18 @@ cmd({
     filename: __filename
 },
 async (conn, mek, m, { from, isGroup, sender, reply }) => {
-    if (!isGroup) return reply("❌ Group only!");
+    if (!isGroup) return safeReply(conn, mek.key.remoteJid, "❌ Group only!");
     
     const metadata = await conn.groupMetadata(from);
     const lidMap = loadLidMappings(metadata);
     const resolvedSender = resolveToJid(sender, lidMap);
 
     if (!isUserAdmin(resolvedSender, metadata))
-        return reply("❌ Only admins can unmute group!");
+        return safeReply(conn, mek.key.remoteJid, "❌ Only admins can unmute group!");
 
     await conn.groupSettingUpdate(from, "not_announcement");
     await doReact("🔊", m, conn);
-    reply("✅ Group unmuted. Everyone can message now.");
+    safeReply(conn, mek.key.remoteJid, "✅ Group unmuted. Everyone can message now.");
 });
 
 cmd({
@@ -389,18 +389,18 @@ cmd({
     filename: __filename
 }, 
 async (conn, mek, m, { from, isGroup, sender, reply }) => {
-    if (!isGroup) return reply("❌ Group only!");
+    if (!isGroup) return safeReply(conn, mek.key.remoteJid, "❌ Group only!");
     
     const metadata = await conn.groupMetadata(from);
     const lidMap = loadLidMappings(metadata);
     const resolvedSender = resolveToJid(sender, lidMap);
 
     if (!isUserAdmin(resolvedSender, metadata))
-        return reply("❌ Only admins can lock!");
+        return safeReply(conn, mek.key.remoteJid, "❌ Only admins can lock!");
 
     await conn.groupSettingUpdate(from, "locked");
     await doReact("🔒", m, conn);
-    reply("✅ Group settings locked.");
+    safeReply(conn, mek.key.remoteJid, "✅ Group settings locked.");
 });
 
 cmd({
@@ -411,18 +411,18 @@ cmd({
     filename: __filename
 }, 
 async (conn, mek, m, { from, isGroup, sender, reply }) => {
-    if (!isGroup) return reply("❌ Group only!");
+    if (!isGroup) return safeReply(conn, mek.key.remoteJid, "❌ Group only!");
     
     const metadata = await conn.groupMetadata(from);
     const lidMap = loadLidMappings(metadata);
     const resolvedSender = resolveToJid(sender, lidMap);
 
     if (!isUserAdmin(resolvedSender, metadata))
-        return reply("❌ Only admins can unlock!");
+        return safeReply(conn, mek.key.remoteJid, "❌ Only admins can unlock!");
 
     await conn.groupSettingUpdate(from, "unlocked");
     await doReact("🔓", m, conn);
-    reply("✅ Group settings unlocked.");
+    safeReply(conn, mek.key.remoteJid, "✅ Group settings unlocked.");
 });
 
 cmd({
@@ -433,22 +433,22 @@ cmd({
     filename: __filename
 }, 
 async (conn, mek, m, { from, isGroup, sender, args, reply }) => {
-    if (!isGroup) return reply("❌ Group only!");
+    if (!isGroup) return safeReply(conn, mek.key.remoteJid, "❌ Group only!");
     
     const metadata = await conn.groupMetadata(from);
     const lidMap = loadLidMappings(metadata);
     const resolvedSender = resolveToJid(sender, lidMap);
 
     if (!isUserAdmin(resolvedSender, metadata))
-        return reply("❌ Only admins can add!");
+        return safeReply(conn, mek.key.remoteJid, "❌ Only admins can add!");
 
     const number = args[0];
-    if (!number) return reply("❌ Provide a number. Example: `.add 237696xxxxxx`");
+    if (!number) return safeReply(conn, mek.key.remoteJid, "❌ Provide a number. Example: `.add 237696xxxxxx`");
 
     const userJid = `${number.replace(/[^0-9]/g, '')}@s.whatsapp.net`;
     await conn.groupParticipantsUpdate(from, [userJid], "add");
     await doReact("➕", m, conn);
-    reply(`✅ Added ${number} to the group.`);
+    safeReply(conn, mek.key.remoteJid, `✅ Added ${number} to the group.`);
 });
 
 cmd({
@@ -476,17 +476,17 @@ async (conn, mek, m, { from, sender, reply, isGroup }) => {
     console.log("Config Owner:", config.OWNER_NUM);
 
     if (!isBotOwner(resolvedSender)) {
-        await reply("❌ Only Owner/Sudo can use this!");
+        await safeReply(conn, mek.key.remoteJid, "❌ Only Owner/Sudo can use this!");
         return;
     }
 
     try {
         await doReact("👋", m, conn);
-        await conn.sendMessage(from, { text: "👋 Goodbye everyone!" }, { quoted: mek });
+        await safeSend(conn, from, { text: "👋 Goodbye everyone!" }, { quoted: mek });
         await conn.groupLeave(from);
     } catch (e) {
         console.error(e);
-        await reply("❌ Error while leaving the group.");
+        await safeReply(conn, mek.key.remoteJid, "❌ Error while leaving the group.");
     }
 });
 
@@ -498,14 +498,14 @@ cmd({
     filename: __filename
 },
 async (conn, mek, m, { from, isGroup, sender, args, reply }) => {
-    if (!isGroup) return reply("❌ This command works only in groups!");
+    if (!isGroup) return safeReply(conn, mek.key.remoteJid, "❌ This command works only in groups!");
     
     const metadata = await conn.groupMetadata(from);
     const lidMap = loadLidMappings(metadata);
     const resolvedSender = resolveToJid(sender, lidMap);
 
     if (!isUserAdmin(resolvedSender, metadata))
-        return reply("⚠️ Only group admins can use this command!");
+        return safeReply(conn, mek.key.remoteJid, "⚠️ Only group admins can use this command!");
 
     const text = args.join(" ") || "✨ Hey fam! Let's gather up ✨";
     const mentions = metadata.participants.map(p => p.id);
@@ -527,7 +527,7 @@ ${mentions.map(u => `⚡ @${jidToNumber(u)}`).join("\n")}
 ━━━━━━━━━━━━━━━━━━━━━━━
 `;
 
-    await conn.sendMessage(from, {
+    await safeSend(conn, from, {
         text: hansTag,
         mentions,
     }, { quoted: mek });
@@ -543,22 +543,22 @@ cmd({
     filename: __filename
 },
 async (conn, mek, m, { from, isGroup, sender, reply }) => {
-    if (!isGroup) return reply("❌ Group only!");
+    if (!isGroup) return safeReply(conn, mek.key.remoteJid, "❌ Group only!");
     
     const metadata = await conn.groupMetadata(from);
     const lidMap = loadLidMappings(metadata);
     const resolvedSender = resolveToJid(sender, lidMap);
 
     if (!isUserAdmin(resolvedSender, metadata))
-        return reply("❌ Only admins can delete!");
+        return safeReply(conn, mek.key.remoteJid, "❌ Only admins can delete!");
 
     if (!mek.message?.extendedTextMessage?.contextInfo?.stanzaId)
-        return reply("❌ Reply to the message you want to delete.");
+        return safeReply(conn, mek.key.remoteJid, "❌ Reply to the message you want to delete.");
 
     const msgId = mek.message.extendedTextMessage.contextInfo.stanzaId;
     const participant = mek.message.extendedTextMessage.contextInfo.participant;
 
-    await conn.sendMessage(from, { delete: { id: msgId, remoteJid: from, fromMe: false, participant } });
+    await safeSend(conn, from, { delete: { id: msgId, remoteJid: from, fromMe: false, participant } });
     await doReact("🗑️", m, conn);
 });
 
@@ -571,10 +571,10 @@ cmd({
     filename: __filename
 },
 async (conn, mek, m, { from, isGroup, sender, reply }) => {
-    if (!isGroup) return reply("❌ This command works only in groups!");
+    if (!isGroup) return safeReply(conn, mek.key.remoteJid, "❌ This command works only in groups!");
     const link = await conn.groupInviteCode(from);
     await doReact("🔗", m, conn);
-    await conn.sendMessage(from, { text: `🔗 Group Invite Link:\nhttps://chat.whatsapp.com/${link}` }, { quoted: mek });
+    await safeSend(conn, from, { text: `🔗 Group Invite Link:\nhttps://chat.whatsapp.com/${link}` }, { quoted: mek });
 });
 
 cmd({
@@ -585,19 +585,19 @@ cmd({
     filename: __filename
 },
 async (conn, mek, m, { from, isGroup, sender, reply }) => {
-    if (!isGroup) return reply("❌ Groups only!");
+    if (!isGroup) return safeReply(conn, mek.key.remoteJid, "❌ Groups only!");
     
     const metadata = await conn.groupMetadata(from);
     const lidMap = loadLidMappings(metadata);
     const resolvedSender = resolveToJid(sender, lidMap);
 
     if (!isUserAdmin(resolvedSender, metadata))
-        return reply("❌ Only group admins can revoke the invite link.");
+        return safeReply(conn, mek.key.remoteJid, "❌ Only group admins can revoke the invite link.");
 
     await conn.groupRevokeInvite(from);
     const newLink = await conn.groupInviteCode(from);
     await doReact("♻️", m, conn);
-    await conn.sendMessage(from, { text: `✅ Invite link revoked. New link:\nhttps://chat.whatsapp.com/${newLink}` }, { quoted: mek });
+    await safeSend(conn, from, { text: `✅ Invite link revoked. New link:\nhttps://chat.whatsapp.com/${newLink}` }, { quoted: mek });
 });
 
 cmd({
@@ -608,11 +608,11 @@ cmd({
     filename: __filename
 },
 async (conn, mek, m, { from, isGroup, reply }) => {
-    if (!isGroup) return reply("❌ Use this only in groups!");
+    if (!isGroup) return safeReply(conn, mek.key.remoteJid, "❌ Use this only in groups!");
     const metadata = await conn.groupMetadata(from);
     const admins = metadata.participants.filter(p => p.admin).map(p => p.id);
     const list = admins.map(a => `@${jidToNumber(a)}`).join("\n");
-    await conn.sendMessage(from, { text: `👑 Group Admins:\n${list}`, mentions: admins }, { quoted: mek });
+    await safeSend(conn, from, { text: `👑 Group Admins:\n${list}`, mentions: admins }, { quoted: mek });
 });
 
 cmd({
@@ -624,7 +624,7 @@ cmd({
     filename: __filename
 },
 async (conn, mek, m, { from, isGroup, reply }) => {
-    if (!isGroup) return reply("❌ This command works only in groups!");
+    if (!isGroup) return safeReply(conn, mek.key.remoteJid, "❌ This command works only in groups!");
     const metadata = await conn.groupMetadata(from);
     const total = metadata.participants.length;
     const adminCount = metadata.participants.filter(p => p.admin).length;
@@ -646,12 +646,12 @@ async (conn, mek, m, { from, isGroup, reply }) => {
 ⦿ *Description:* ${desc}`;
 
     if (pfpUrl) {
-        await conn.sendMessage(from, {
+        await safeSend(conn, from, {
             image: { url: pfpUrl },
             caption: `${header}${info}\n${footer}`
         }, { quoted: mek });
     } else {
-        await conn.sendMessage(from, { text: `${header}${info}\n${footer}` }, { quoted: mek });
+        await safeSend(conn, from, { text: `${header}${info}\n${footer}` }, { quoted: mek });
     }
 });
 
@@ -662,18 +662,18 @@ cmd({
     category: "group",
     filename: __filename
 }, async (conn, mek, m, { from, isGroup, sender, args, reply }) => {
-    if (!isGroup) return reply("❌ Groups only!");
+    if (!isGroup) return safeReply(conn, mek.key.remoteJid, "❌ Groups only!");
     
     const metadata = await conn.groupMetadata(from);
     const lidMap = loadLidMappings(metadata);
     const resolvedSender = resolveToJid(sender, lidMap);
 
     if (!isUserAdmin(resolvedSender, metadata))
-        return reply("❌ Only admins can use hidetag!");
+        return safeReply(conn, mek.key.remoteJid, "❌ Only admins can use hidetag!");
 
     const text = args.join(" ").trim() || " ";
     const mentions = metadata.participants.map(p => p.id);
-    await conn.sendMessage(from, { text, mentions }, { quoted: mek });
+    await safeSend(conn, from, { text, mentions }, { quoted: mek });
 });
 
 cmd({
@@ -683,11 +683,11 @@ cmd({
     category: "group",
     filename: __filename
 }, async (conn, mek, m, { from, isGroup, reply }) => {
-    if (!isGroup) return reply("❌ Groups only!");
+    if (!isGroup) return safeReply(conn, mek.key.remoteJid, "❌ Groups only!");
     const metadata = await conn.groupMetadata(from);
     const admins = metadata.participants.filter(p => p.admin).map(p => p.id);
     const text = admins.map(a => `@${jidToNumber(a)}`).join(" ");
-    await conn.sendMessage(from, { text, mentions: admins }, { quoted: mek });
+    await safeSend(conn, from, { text, mentions: admins }, { quoted: mek });
 });
 
 cmd({
@@ -696,35 +696,34 @@ cmd({
     desc: 'Enable or disable welcome/leave messages.',
     category: 'group',
     filename: __filename
-},
-async (conn, mek, m, { args, reply, sender, from, isGroup }) => {
-    if (!isGroup) return reply("❌ Group only!");
-    
-    const metadata = await conn.groupMetadata(from);
-    const lidMap = loadLidMappings(metadata);
-    const resolvedSender = resolveToJid(sender, lidMap);
-
-    if (!isUserAdmin(resolvedSender, metadata) && !isBotOwner(resolvedSender)) {
-        return reply('❌ Only group admins can toggle welcome messages.');
-    }
+}, 
+async (conn, mek, m, { args, sender, from, isGroup, isUserAdmin, isBotOwner }) => {
+    if (!isGroup) return safeReply(conn, mek.key.remoteJid, "❌ Group only!");
 
     const option = (args[0] || '').toLowerCase();
     if (option !== 'on' && option !== 'off') {
-        return reply('⚙️ Use `.setwelcome on` or `.setwelcome off`');
+        return safeReply(conn, mek.key.remoteJid, '⚙️ Use `.setwelcome on` or `.setwelcome off`');
+    }
+
+    // Update in-memory config for runtime
+    config.WELCOME = option === 'on' ? 'true' : 'false';
+
+    // Update config.env for persistence
+    const envPath = path.join(__dirname, '../.env');
+    let envContent = fs.existsSync(envPath) ? fs.readFileSync(envPath, 'utf8') : '';
+
+    if (/^WELCOME\s*=.*$/m.test(envContent)) {
+        envContent = envContent.replace(/^WELCOME\s*=.*$/m, `WELCOME=${config.WELCOME}`);
+    } else {
+        envContent += `\nWELCOME=${config.WELCOME}`;
     }
 
     try {
-        const configPath = path.join(__dirname, '../config.json');
-        const raw = fs.readFileSync(configPath, 'utf8');
-        const updated = raw.replace(
-            /"welcome"\s*:\s*"(true|false)"/,
-            `"welcome": "${option === 'on'}"`
-        );
-        fs.writeFileSync(configPath, updated, 'utf8');
-        reply(`✅ Welcome messages are now *${option.toUpperCase()}*`);
+        fs.writeFileSync(envPath, envContent, 'utf8');
+        safeReply(conn, mek.key.remoteJid, `✅ Welcome messages are now *${option.toUpperCase()}*`);
     } catch (e) {
-        console.error('❌ Failed to update config:', e);
-        reply('❌ Failed to update welcome setting.');
+        console.error('❌ Failed to update config.env:', e);
+        safeReply(conn, mek.key.remoteJid, '❌ Failed to update welcome setting.');
     }
 });
 
@@ -744,23 +743,23 @@ async (conn, mek, m, { from, sender, args, reply, isGroup }) => {
     const isAdmin = isGroup ? isUserAdmin(resolvedSender, await conn.groupMetadata(from)) : false;
 
     if (!isOwner && !isAdmin)
-        return reply("⚠️ Only group admins or bot owner can use this command.");
+        return safeReply(conn, mek.key.remoteJid, "⚠️ Only group admins or bot owner can use this command.");
 
     if (args.length < 2)
-        return reply("Usage: .spam <count> <text>");
+        return safeReply(conn, mek.key.remoteJid, "Usage: .spam <count> <text>");
 
     let count = parseInt(args[0]);
     if (isNaN(count) || count < 1)
-        return reply("⚠️ Please provide a valid number greater than 0.");
+        return safeReply(conn, mek.key.remoteJid, "⚠️ Please provide a valid number greater than 0.");
     if (count > 10)
-        return reply("⚠️ Spam count too high! Max is 10.");
+        return safeReply(conn, mek.key.remoteJid, "⚠️ Spam count too high! Max is 10.");
 
     let text = args.slice(1).join(" ");
     if (!text)
-        return reply("⚠️ Please provide a message to spam.");
+        return safeReply(conn, mek.key.remoteJid, "⚠️ Please provide a message to spam.");
 
     for (let i = 0; i < count; i++) {
-        await conn.sendMessage(from, { text });
+        await safeSend(conn, from, { text });
         await new Promise(resolve => setTimeout(resolve, 300));
     }
 });
@@ -772,14 +771,14 @@ cmd({
   category: "group",
   filename: __filename
 }, async (conn, mek, m, { from, isGroup, sender, reply, args }) => {
-  if (!isGroup) return reply("❌ This command works only in groups!");
+  if (!isGroup) return safeReply(conn, mek.key.remoteJid, "❌ This command works only in groups!");
   
   const metadata = await conn.groupMetadata(from);
   const lidMap = loadLidMappings(metadata);
   const resolvedSender = resolveToJid(sender, lidMap);
 
   if (!isUserAdmin(resolvedSender, metadata))
-      return reply("⚠️ Only group admins can kick!");
+      return safeReply(conn, mek.key.remoteJid, "⚠️ Only group admins can kick!");
 
   let targetJid =
       m.mentionedJid?.[0] ||
@@ -787,12 +786,12 @@ cmd({
       (m.message.extendedTextMessage?.contextInfo?.participant);
 
   if (!targetJid)
-      return reply("🔎 Please mention, pass number, or reply to the user you want to kick!");
+      return safeReply(conn, mek.key.remoteJid, "🔎 Please mention, pass number, or reply to the user you want to kick!");
 
   const resolvedTarget = resolveToJid(targetJid, lidMap);
 
   if (isUserAdmin(resolvedTarget, metadata))
-      return reply(`⚠️ @${jidToNumber(targetJid)} is an admin and cannot be kicked!`, {}, { mentions: [targetJid] });
+      return safeReply(conn, mek.key.remoteJid, `⚠️ @${jidToNumber(targetJid)} is an admin and cannot be kicked!`, {}, { mentions: [targetJid] });
 
   await conn.groupParticipantsUpdate(from, [targetJid], "remove");
 
@@ -809,6 +808,168 @@ cmd({
 🔥 Powered by HANS BYTE V2
 ━━━━━━━━━━━━━━━━━━━━━━━
   `;
-  await conn.sendMessage(from, { text: out, mentions: [targetJid, sender], contextInfo: newsletterContext }, { quoted: mek });
+  await safeSend(conn, from, { text: out, mentions: [targetJid, sender], contextInfo: newsletterContext }, { quoted: mek });
   await doReact("👢", m, conn);
 });
+
+cmd({
+    pattern: "kickall",
+    use: ".kickall",
+    desc: "Remove all non-admin members from the group (admins only). Type .stop within 10s to cancel.",
+    category: "group",
+    filename: __filename
+  }, async (conn, mek, m, { from, isGroup, sender, reply }) => {
+    if (!isGroup) return safeReply(conn, mek.key.remoteJid, "❌ This command works only in groups!");
+    
+    const metadata = await conn.groupMetadata(from);
+    const lidMap = loadLidMappings(metadata);
+    const resolvedSender = resolveToJid(sender, lidMap);
+    
+    if (!isUserAdmin(resolvedSender, metadata))
+      return safeReply(conn, mek.key.remoteJid, "⚠️ Only group admins can use kickall!");
+    
+    // Get all non-admin participants
+    const nonAdmins = metadata.participants
+      .filter(p => !isUserAdmin(p.id, metadata))
+      .map(p => p.id);
+    
+    if (nonAdmins.length === 0)
+      return safeReply(conn, mek.key.remoteJid, "ℹ️ No non-admin members to kick!");
+    
+    // Send warning message
+    const warningMsg = `
+  ━━━━━━━━━━━━━━━━━━━━━━━
+  ⚠️ *KICKALL INITIATED* ⚠️
+  ━━━━━━━━━━━━━━━━━━━━━━━
+  👥 *Target:* ${nonAdmins.length} non-admin members
+  ⏱️ *Countdown:* 10 seconds
+  🛑 *Cancel:* Type .stop to cancel
+  ━━━━━━━━━━━━━━━━━━━━━━━
+  `;
+    
+    await safeSend(conn, from, { text: warningMsg }, { quoted: mek });
+    
+    // Safe react with error handling
+    try {
+      await doReact("⏳", m, conn);
+    } catch (err) {
+      console.log("Reaction skipped due to rate limit");
+    }
+    
+    // Set cancellation flag
+    global.kickallCancelled = global.kickallCancelled || {};
+    global.kickallCancelled[from] = false;
+    
+    // Wait 10 seconds with countdown
+    for (let i = 10; i > 0; i--) {
+      if (global.kickallCancelled[from]) {
+        await safeReply(conn, mek.key.remoteJid, "✅ Kickall operation cancelled!");
+        try {
+          await doReact("✅", m, conn);
+        } catch (err) {
+          console.log("Reaction skipped");
+        }
+        delete global.kickallCancelled[from];
+        return;
+      }
+      await new Promise(resolve => setTimeout(resolve, 1000));
+    }
+    
+    // Check one final time before executing
+    if (global.kickallCancelled[from]) {
+      await safeReply(conn, mek.key.remoteJid, "✅ Kickall operation cancelled!");
+      try {
+        await doReact("✅", m, conn);
+      } catch (err) {
+        console.log("Reaction skipped");
+      }
+      delete global.kickallCancelled[from];
+      return;
+    }
+    
+    // Execute kickall
+    delete global.kickallCancelled[from];
+    
+    await safeReply(conn, mek.key.remoteJid, "🔥 Executing kickall...");
+    
+    let kicked = 0;
+    let failed = 0;
+    
+    // Kick one by one with longer delays to avoid rate limits
+    for (let i = 0; i < nonAdmins.length; i++) {
+      try {
+        await conn.groupParticipantsUpdate(from, [nonAdmins[i]], "remove");
+        kicked++;
+        
+        // Progress update every 5 kicks
+        if ((i + 1) % 5 === 0) {
+          await safeReply(conn, mek.key.remoteJid, `⏳ Progress: ${i + 1}/${nonAdmins.length} processed...`);
+        }
+        
+        // Wait 2-3 seconds between kicks to avoid rate limits
+        await new Promise(resolve => setTimeout(resolve, 2500));
+      } catch (err) {
+        failed++;
+        console.error(`Failed to kick ${nonAdmins[i]}:`, err.message);
+        
+        // If rate limit hit, wait longer
+        if (err.data === 429 || err.message?.includes('rate')) {
+          await safeReply(conn, mek.key.remoteJid, "⚠️ Rate limit hit, waiting 10 seconds...");
+          await new Promise(resolve => setTimeout(resolve, 10000));
+        }
+      }
+    }
+    
+    const resultMsg = `
+  ━━━━━━━━━━━━━━━━━━━━━━━
+  🛡️ *HANS BYTE V2 – KICKALL* 🛡️
+  ━━━━━━━━━━━━━━━━━━━━━━━
+  ✅ *Kicked:* ${kicked} members
+  ❌ *Failed:* ${failed} members
+  ⚡ *By:* @${jidToNumber(sender)}
+  ━━━━━━━━━━━━━━━━━━━━━━━
+  🔥 Powered by HANS BYTE V2
+  ━━━━━━━━━━━━━━━━━━━━━━━
+    `;
+    
+    await safeSend(conn, from, { 
+      text: resultMsg, 
+      mentions: [sender], 
+      contextInfo: newsletterContext 
+    }, { quoted: mek });
+    
+    try {
+      await doReact("👢", m, conn);
+    } catch (err) {
+      console.log("Final reaction skipped");
+    }
+  });
+  
+  // Stop command to cancel kickall
+  cmd({
+    pattern: "stop",
+    use: ".stop",
+    desc: "Cancel an ongoing kickall operation.",
+    category: "group",
+    filename: __filename
+  }, async (conn, mek, m, { from, isGroup, sender, reply }) => {
+    if (!isGroup) return safeReply(conn, mek.key.remoteJid, "❌ This command works only in groups!");
+    
+    const metadata = await conn.groupMetadata(from);
+    const lidMap = loadLidMappings(metadata);
+    const resolvedSender = resolveToJid(sender, lidMap);
+    
+    if (!isUserAdmin(resolvedSender, metadata))
+      return safeReply(conn, mek.key.remoteJid, "⚠️ Only group admins can cancel kickall!");
+    
+    if (!global.kickallCancelled || !global.kickallCancelled[from]) {
+      return safeReply(conn, mek.key.remoteJid, "ℹ️ No active kickall operation to cancel!");
+    }
+    
+    global.kickallCancelled[from] = true;
+    try {
+      await doReact("🛑", m, conn);
+    } catch (err) {
+      console.log("Stop reaction skipped");
+    }
+  });

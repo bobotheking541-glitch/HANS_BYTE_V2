@@ -11,15 +11,15 @@ cmd({
     filename: __filename,
 }, async (conn, mek, m, { q, reply, sender }) => {
     try {
-        if (!q) return reply("🔍 *What should I search?*\n\nUsage: .gsearch some search query");
+        if (!q) return safeReply(conn, mek.key.remoteJid, "🔍 *What should I search?*\n\nUsage: .gsearch some search query");
 
-        reply("🔎 *Searching...*\nHold tight, fetching results from GiftedTech API!");
+        safeReply(conn, mek.key.remoteJid, "🔎 *Searching...*\nHold tight, fetching results from GiftedTech API!");
 
         const apiUrl = `https://api.giftedtech.co.ke/api/search/google?apikey=gifted_api_6kuv56877d&query=${encodeURIComponent(q)}`;
         const { data } = await axios.get(apiUrl);
 
         if (!data.success || !Array.isArray(data.results) || data.results.length === 0) {
-            return reply("❌ No results found for your query.");
+            return safeReply(conn, mek.key.remoteJid, "❌ No results found for your query.");
         }
 
         // Format results nicely
@@ -42,13 +42,13 @@ cmd({
             },
         };
 
-        await conn.sendMessage(mek.chat, {
+        await safeSend(conn, mek.chat, {
             text: txt.trim(),
             contextInfo: newsletterContext
         }, { quoted: mek });
 
     } catch (e) {
         console.error("GSearch Error:", e);
-        reply("⚠️ *Oops! Something went wrong while searching.*\nTry again later or with another query.");
+        safeReply(conn, mek.key.remoteJid, "⚠️ *Oops! Something went wrong while searching.*\nTry again later or with another query.");
     }
 });

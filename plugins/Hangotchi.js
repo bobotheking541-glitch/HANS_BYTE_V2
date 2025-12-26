@@ -188,7 +188,7 @@ async (conn, mek, m, { from, args, reply, sender }) => {
         'Tip: actions have cooldowns. Be creative and patient — the top is very hard.'
     ].join('\n');
 
-    await conn.sendMessage(from, { text: menu, contextInfo: newsletterContext }, { quoted: m });
+    await safeSend(conn, from, { text: menu, contextInfo: newsletterContext }, { quoted: m });
     saveUser(data, user);
 });
 
@@ -212,9 +212,9 @@ async (conn, mek, m, { from, args, reply, sender }) => {
     if (!user.pet || (user.pet && user.pet.createdAt && now() - user.pet.createdAt > 0 && args[0] === 'new')) {
         user.pet = defaultPet();
         user.coins += 100;
-        await conn.sendMessage(from, { text: `🥚 Your new Hamgotchi hatched!\nName: ${user.pet.name}\nSpecies: ${user.pet.species}\nRarity: ${user.pet.rarity}\nYou also found 100🪙 as starter.`, contextInfo: newsletterContext }, { quoted: m });
+        await safeSend(conn, from, { text: `🥚 Your new Hamgotchi hatched!\nName: ${user.pet.name}\nSpecies: ${user.pet.species}\nRarity: ${user.pet.rarity}\nYou also found 100🪙 as starter.`, contextInfo: newsletterContext }, { quoted: m });
     } else {
-        await conn.sendMessage(from, { text: `🐾 You already have a pet: ${user.pet.name} (${user.pet.species}). Use .status or buy smallEgg to hatch more.`, contextInfo: newsletterContext }, { quoted: m });
+        await safeSend(conn, from, { text: `🐾 You already have a pet: ${user.pet.name} (${user.pet.species}). Use .status or buy smallEgg to hatch more.`, contextInfo: newsletterContext }, { quoted: m });
     }
 
     saveUser(data, user);
@@ -248,7 +248,7 @@ async (conn, mek, m, { from, args, reply, sender }) => {
         `╰━━━⪼`
     ].join('\n');
 
-    await conn.sendMessage(from, { text: s, contextInfo: newsletterContext }, { quoted: m });
+    await safeSend(conn, from, { text: s, contextInfo: newsletterContext }, { quoted: m });
     saveUser(data, user);
 });
 
@@ -271,7 +271,7 @@ async (conn, mek, m, { from, args, reply, sender }) => {
 
     if (now() - user.session.lastMine < COOLDOWN) {
         const wait = Math.ceil((COOLDOWN - (now() - user.session.lastMine)) / 60000);
-        return conn.sendMessage(from, { text: `⏳ Your pet is resting from mining. Wait ${wait} minute(s).`, contextInfo: newsletterContext }, { quoted: m });
+        return safeSend(conn, from, { text: `⏳ Your pet is resting from mining. Wait ${wait} minute(s).`, contextInfo: newsletterContext }, { quoted: m });
     }
 
     user.session.lastMine = now();
@@ -304,7 +304,7 @@ async (conn, mek, m, { from, args, reply, sender }) => {
         eventText = `⛏️ Mining success: +${base}🪙`;
     }
 
-    await conn.sendMessage(from, { text: `${eventText}\n✨ Pet earned XP. Use .status to check.`, contextInfo: newsletterContext }, { quoted: m });
+    await safeSend(conn, from, { text: `${eventText}\n✨ Pet earned XP. Use .status to check.`, contextInfo: newsletterContext }, { quoted: m });
     saveUser(data, user);
 });
 
@@ -328,12 +328,12 @@ async (conn, mek, m, { from, args, reply, sender }) => {
 
     if (now() - user.session.lastFeed < COOLDOWN) {
         const wait = Math.ceil((COOLDOWN - (now() - user.session.lastFeed)) / 60000);
-        return conn.sendMessage(from, { text: `⏳ Food still digesting. Wait a bit before feeding again.`, contextInfo: newsletterContext }, { quoted: m });
+        return safeSend(conn, from, { text: `⏳ Food still digesting. Wait a bit before feeding again.`, contextInfo: newsletterContext }, { quoted: m });
     }
 
     // Check if they have food
     if (!user.inventory.food || user.inventory.food < 1) {
-        return conn.sendMessage(from, { text: `🍽️ You have no Food. Buy one with .shop or .buy food`, contextInfo: newsletterContext }, { quoted: m });
+        return safeSend(conn, from, { text: `🍽️ You have no Food. Buy one with .shop or .buy food`, contextInfo: newsletterContext }, { quoted: m });
     }
 
     removeItem(user, 'food', 1);
@@ -342,7 +342,7 @@ async (conn, mek, m, { from, args, reply, sender }) => {
     user.pet.energy = clamp(user.pet.energy + rand(12, 30), 0, 100);
     awardXp(user, rand(3,8));
 
-    await conn.sendMessage(from, { text: `🍖 You fed ${user.pet.name}. Happiness + Energy increased.`, contextInfo: newsletterContext }, { quoted: m });
+    await safeSend(conn, from, { text: `🍖 You fed ${user.pet.name}. Happiness + Energy increased.`, contextInfo: newsletterContext }, { quoted: m });
     saveUser(data, user);
 });
 
@@ -351,7 +351,7 @@ async (conn, mek, m, { from, args, reply, sender }) => {
  * play - increases happiness, uses energy and cooldown
  */
 cmd({
-    pattern: 'play',
+    pattern: 'gplay',
     alias: ['toy'],
     desc: 'Play with your pet to increase happiness',
     category: 'game',
@@ -365,11 +365,11 @@ async (conn, mek, m, { from, args, reply, sender }) => {
     newsletterContext.mentionedJid = [sender];
 
     if (now() - user.session.lastPlay < COOLDOWN) {
-        return conn.sendMessage(from, { text: `🛑 Your pet is tired. Wait before playing again.`, contextInfo: newsletterContext }, { quoted: m });
+        return safeSend(conn, from, { text: `🛑 Your pet is tired. Wait before playing again.`, contextInfo: newsletterContext }, { quoted: m });
     }
 
     if (!user.inventory.toy || user.inventory.toy < 1) {
-        return conn.sendMessage(from, { text: `🎯 No toys found. Buy one with .shop or .buy toy`, contextInfo: newsletterContext }, { quoted: m });
+        return safeSend(conn, from, { text: `🎯 No toys found. Buy one with .shop or .buy toy`, contextInfo: newsletterContext }, { quoted: m });
     }
 
     removeItem(user, 'toy', 1);
@@ -378,7 +378,7 @@ async (conn, mek, m, { from, args, reply, sender }) => {
     user.pet.energy = clamp(user.pet.energy - rand(8, 20), 0, 100);
     awardXp(user, rand(4, 10));
 
-    await conn.sendMessage(from, { text: `🧸 You played with ${user.pet.name}. Happiness increased!`, contextInfo: newsletterContext }, { quoted: m });
+    await safeSend(conn, from, { text: `🧸 You played with ${user.pet.name}. Happiness increased!`, contextInfo: newsletterContext }, { quoted: m });
     saveUser(data, user);
 });
 
@@ -402,7 +402,7 @@ async (conn, mek, m, { from, args, reply, sender }) => {
     user.pet.energy = clamp(user.pet.energy + restore, 0, 100);
     awardXp(user, rand(1,4));
 
-    await conn.sendMessage(from, { text: `💤 ${user.pet.name} rested and recovered ${restore}% energy.`, contextInfo: newsletterContext }, { quoted: m });
+    await safeSend(conn, from, { text: `💤 ${user.pet.name} rested and recovered ${restore}% energy.`, contextInfo: newsletterContext }, { quoted: m });
     saveUser(data, user);
 });
 
@@ -428,7 +428,7 @@ async (conn, mek, m, { from, args, reply, sender }) => {
     // variable cooldown: user.pet.level affects exploration frequency
     const cooldown = MIN; // can improve later
     if (now() - user.session.lastExplore < cooldown) {
-        return conn.sendMessage(from, { text: `⏳ ${user.pet.name} is still exploring. Try later.`, contextInfo: newsletterContext }, { quoted: m });
+        return safeSend(conn, from, { text: `⏳ ${user.pet.name} is still exploring. Try later.`, contextInfo: newsletterContext }, { quoted: m });
     }
 
     user.session.lastExplore = now();
@@ -459,7 +459,7 @@ async (conn, mek, m, { from, args, reply, sender }) => {
         text = `🧭 Exploration returned: +${coins}🪙 and some XP.`;
     }
 
-    await conn.sendMessage(from, { text, contextInfo: newsletterContext }, { quoted: m });
+    await safeSend(conn, from, { text, contextInfo: newsletterContext }, { quoted: m });
     saveUser(data, user);
 });
 
@@ -483,7 +483,7 @@ async (conn, mek, m, { from, args, reply, sender }) => {
     // Determine target mob
     const encounter = user.session.lastEncounter && now() - user.session.lastEncounter.time < 1000*60*60 ? user.session.lastEncounter.mob : pick(MOB_TEMPLATES.filter(x => x.level <= Math.max(1, user.level + 6)));
     if (!encounter) {
-        return conn.sendMessage(from, { text: 'No mobs nearby. Try .explore to find one.', contextInfo: newsletterContext }, { quoted: m });
+        return safeSend(conn, from, { text: 'No mobs nearby. Try .explore to find one.', contextInfo: newsletterContext }, { quoted: m });
     }
 
     // base success chance depends on player level vs mob level
@@ -521,7 +521,7 @@ async (conn, mek, m, { from, args, reply, sender }) => {
     delete user.session.lastEncounter;
     user.session.lastMob = now();
 
-    await conn.sendMessage(from, { text, contextInfo: newsletterContext }, { quoted: m });
+    await safeSend(conn, from, { text, contextInfo: newsletterContext }, { quoted: m });
     saveUser(data, user);
 });
 
@@ -543,10 +543,10 @@ async (conn, mek, m, { from, args, reply, sender }) => {
     newsletterContext.mentionedJid = [sender];
 
     if (!m.message?.extendedTextMessage?.contextInfo?.mentionedJid || m.message.extendedTextMessage.contextInfo.mentionedJid.length === 0) {
-        return conn.sendMessage(from, { text: '⚠️ To battle someone, reply/mention their message and send .battle', contextInfo: newsletterContext }, { quoted: m });
+        return safeSend(conn, from, { text: '⚠️ To battle someone, reply/mention their message and send .battle', contextInfo: newsletterContext }, { quoted: m });
     }
     const opponentJid = m.message.extendedTextMessage.contextInfo.mentionedJid[0];
-    if (opponentJid === sender) return conn.sendMessage(from, { text: "You cannot battle yourself silly.", contextInfo: newsletterContext }, { quoted: m });
+    if (opponentJid === sender) return safeSend(conn, from, { text: "You cannot battle yourself silly.", contextInfo: newsletterContext }, { quoted: m });
 
     const userA = ensureUser(data, sender, m.pushName || null);
     const userB = ensureUser(data, opponentJid, null);
@@ -572,7 +572,7 @@ async (conn, mek, m, { from, args, reply, sender }) => {
         awardXp(userA, 8); awardXp(userB, 8);
     }
 
-    await conn.sendMessage(from, { text: msg, contextInfo: newsletterContext }, { quoted: m });
+    await safeSend(conn, from, { text: msg, contextInfo: newsletterContext }, { quoted: m });
     saveUser(data, userA); saveUser(data, userB);
 });
 
@@ -598,7 +598,7 @@ async (conn, mek, m, { from, args, reply, sender }) => {
         i++;
     }
     menu += '╰━━━⪼\nUse .buy <id> to purchase (example: .buy food)';
-    await conn.sendMessage(from, { text: menu, contextInfo: newsletterContext }, { quoted: m });
+    await safeSend(conn, from, { text: menu, contextInfo: newsletterContext }, { quoted: m });
 });
 
 
@@ -618,16 +618,16 @@ async (conn, mek, m, { from, args, reply, sender }) => {
     const user = ensureUser(data, sender, m.pushName || null);
     newsletterContext.mentionedJid = [sender];
 
-    if (!args[0]) return conn.sendMessage(from, { text: 'Usage: .buy <id>. See .shop for ids', contextInfo: newsletterContext }, { quoted: m });
+    if (!args[0]) return safeSend(conn, from, { text: 'Usage: .buy <id>. See .shop for ids', contextInfo: newsletterContext }, { quoted: m });
     const id = args[0].toLowerCase();
     const item = Object.values(SHOP).find(it => it.id === id);
-    if (!item) return conn.sendMessage(from, { text: 'Item not found. Check .shop', contextInfo: newsletterContext }, { quoted: m });
+    if (!item) return safeSend(conn, from, { text: 'Item not found. Check .shop', contextInfo: newsletterContext }, { quoted: m });
 
-    if (user.coins < item.price) return conn.sendMessage(from, { text: `You need ${item.price}🪙 to buy ${item.name}.`, contextInfo: newsletterContext }, { quoted: m });
+    if (user.coins < item.price) return safeSend(conn, from, { text: `You need ${item.price}🪙 to buy ${item.name}.`, contextInfo: newsletterContext }, { quoted: m });
 
     user.coins -= item.price;
     addItem(user, item.id, 1);
-    await conn.sendMessage(from, { text: `✅ Purchased ${item.name}. Use inventory or actions to use it.`, contextInfo: newsletterContext }, { quoted: m });
+    await safeSend(conn, from, { text: `✅ Purchased ${item.name}. Use inventory or actions to use it.`, contextInfo: newsletterContext }, { quoted: m });
     saveUser(data, user);
 });
 
@@ -649,7 +649,7 @@ async (conn, mek, m, { from, args, reply, sender }) => {
     newsletterContext.mentionedJid = [sender];
 
     const inv = Object.keys(user.inventory).length ? Object.entries(user.inventory).map(([k,v]) => `${k} x${v}`).join('\n') : 'Empty';
-    await conn.sendMessage(from, { text: `╭━━━〔 *INVENTORY* 〕━━━⊷\n${inv}\n╰━━━⪼`, contextInfo: newsletterContext }, { quoted: m });
+    await safeSend(conn, from, { text: `╭━━━〔 *INVENTORY* 〕━━━⊷\n${inv}\n╰━━━⪼`, contextInfo: newsletterContext }, { quoted: m });
 });
 
 /**
@@ -668,7 +668,7 @@ async (conn, mek, m, { from, args, reply, sender }) => {
     newsletterContext.mentionedJid = [sender];
 
     const users = Object.values(data.users);
-    if (!users.length) return conn.sendMessage(from, { text: 'No players yet.', contextInfo: newsletterContext }, { quoted: m });
+    if (!users.length) return safeSend(conn, from, { text: 'No players yet.', contextInfo: newsletterContext }, { quoted: m });
 
     const sorted = users.sort((a,b) => {
         if (b.level !== a.level) return b.level - a.level;
@@ -681,7 +681,7 @@ async (conn, mek, m, { from, args, reply, sender }) => {
         text += `${idx+1}. ${u.username} — Lv ${u.level} | ${u.xp} XP | ${u.coins}🪙\n`;
     });
 
-    await conn.sendMessage(from, { text, contextInfo: newsletterContext }, { quoted: m });
+    await safeSend(conn, from, { text, contextInfo: newsletterContext }, { quoted: m });
 });
 
 
@@ -704,8 +704,8 @@ async (conn, mek, m, { from, args, reply, sender }) => {
     // simple checks: require pet.xp > threshold and coin cost
     const threshold = (user.pet.level + 1) * 100; // tweak
     const cost = Math.max(500, user.pet.level * 200);
-    if (user.pet.xp < threshold) return conn.sendMessage(from, { text: `Your pet lacks experience to evolve. Need pet XP >= ${threshold}.`, contextInfo: newsletterContext }, { quoted: m });
-    if (user.coins < cost) return conn.sendMessage(from, { text: `You need ${cost}🪙 to trigger evolution.`, contextInfo: newsletterContext }, { quoted: m });
+    if (user.pet.xp < threshold) return safeSend(conn, from, { text: `Your pet lacks experience to evolve. Need pet XP >= ${threshold}.`, contextInfo: newsletterContext }, { quoted: m });
+    if (user.coins < cost) return safeSend(conn, from, { text: `You need ${cost}🪙 to trigger evolution.`, contextInfo: newsletterContext }, { quoted: m });
 
     user.coins -= cost;
     // announce evolution with RNG chance to gain rarer form
@@ -722,7 +722,7 @@ async (conn, mek, m, { from, args, reply, sender }) => {
     user.pet.energy = clamp(user.pet.energy + rand(10,25), 0, 100);
     awardXp(user, rand(20,40));
 
-    await conn.sendMessage(from, { text: `✨ Evolution result: ${user.pet.name} evolved!\nRarity: ${oldRarity} → ${user.pet.rarity}\nPet got stronger and happier.`, contextInfo: newsletterContext }, { quoted: m });
+    await safeSend(conn, from, { text: `✨ Evolution result: ${user.pet.name} evolved!\nRarity: ${oldRarity} → ${user.pet.rarity}\nPet got stronger and happier.`, contextInfo: newsletterContext }, { quoted: m });
     saveUser(data, user);
 });
 
@@ -744,13 +744,13 @@ async (conn, mek, m, { from, args, reply, sender }) => {
     const user = ensureUser(data, sender, m.pushName || null);
     newsletterContext.mentionedJid = [sender];
 
-    if (user.level < 99) return conn.sendMessage(from, { text: 'You must be at least Level 99 to attempt Final Trial.', contextInfo: newsletterContext }, { quoted: m });
-    if (now() - user.session.lastFinalTrial < COOLDOWN) return conn.sendMessage(from, { text: 'Final Trial cooldown active. Try later.', contextInfo: newsletterContext }, { quoted: m });
+    if (user.level < 99) return safeSend(conn, from, { text: 'You must be at least Level 99 to attempt Final Trial.', contextInfo: newsletterContext }, { quoted: m });
+    if (now() - user.session.lastFinalTrial < COOLDOWN) return safeSend(conn, from, { text: 'Final Trial cooldown active. Try later.', contextInfo: newsletterContext }, { quoted: m });
 
     // cost: either huge coins or have Final Key in inventory (preferred)
     const hasKey = user.inventory.finalKey && user.inventory.finalKey > 0;
     const cost = 50000;
-    if (!hasKey && user.coins < cost) return conn.sendMessage(from, { text: `You need ${cost}🪙 or a Final Trial Key to enter.`, contextInfo: newsletterContext }, { quoted: m });
+    if (!hasKey && user.coins < cost) return safeSend(conn, from, { text: `You need ${cost}🪙 or a Final Trial Key to enter.`, contextInfo: newsletterContext }, { quoted: m });
 
     if (hasKey) removeItem(user, 'finalKey', 1);
     else user.coins -= cost;
@@ -781,7 +781,7 @@ async (conn, mek, m, { from, args, reply, sender }) => {
     }
 
     user.session.lastFinalTrial = now();
-    await conn.sendMessage(from, { text, contextInfo: newsletterContext }, { quoted: m });
+    await safeSend(conn, from, { text, contextInfo: newsletterContext }, { quoted: m });
     saveUser(data, user);
 });
 
@@ -806,24 +806,24 @@ async (conn, mek, m, { from, args, reply, sender }) => {
         removeItem(user, 'grandGift', 1);
         // grant the special permission: owner contact request token
         addItem(user, 'askAnythingCoupon', 1);
-        await conn.sendMessage(from, { text: '🎉 Grand Gift redeemed: You now have an Ask-Anything coupon. Use .ask to request a service (owner decides eligibility).', contextInfo: newsletterContext }, { quoted: m });
+        await safeSend(conn, from, { text: '🎉 Grand Gift redeemed: You now have an Ask-Anything coupon. Use .ask to request a service (owner decides eligibility).', contextInfo: newsletterContext }, { quoted: m });
         saveUser(data, user);
         return;
     }
 
     if (args[0] && args[0] === 'ask') {
         // claim ask-anything coupon
-        if (!user.inventory.askAnythingCoupon) return conn.sendMessage(from, { text: 'No ask-anything coupon found. Reach Level 75+ or earn the grandGift.', contextInfo: newsletterContext }, { quoted: m });
+        if (!user.inventory.askAnythingCoupon) return safeSend(conn, from, { text: 'No ask-anything coupon found. Reach Level 75+ or earn the grandGift.', contextInfo: newsletterContext }, { quoted: m });
         removeItem(user, 'askAnythingCoupon', 1);
         // store request for the owner: write to data.meta.requests
         data.meta.requests = data.meta.requests || [];
         data.meta.requests.push({ from: user.jid, at: now(), request: args.slice(1).join(' ') || 'Ask-anything coupon used' });
         writeData(data);
-        await conn.sendMessage(from, { text: '✅ Coupon used. Your request was forwarded to the owner for review.', contextInfo: newsletterContext }, { quoted: m });
+        await safeSend(conn, from, { text: '✅ Coupon used. Your request was forwarded to the owner for review.', contextInfo: newsletterContext }, { quoted: m });
         return;
     }
 
-    await conn.sendMessage(from, { text: '🎁 You have no redeemable gifts. Earn them by exploring, winning mobs, or reaching the final level.', contextInfo: newsletterContext }, { quoted: m });
+    await safeSend(conn, from, { text: '🎁 You have no redeemable gifts. Earn them by exploring, winning mobs, or reaching the final level.', contextInfo: newsletterContext }, { quoted: m });
 });
 
 /**
@@ -863,7 +863,7 @@ async (conn, mek, m, { from, args, reply, sender }) => {
     quests.forEach(qu => text += `${qu.desc} — ${qu.prog} — Reward: ${qu.reward}\n`);
     text += '\nUse actions to progress. Claim reward automatically when complete (work in background).';
 
-    await conn.sendMessage(from, { text, contextInfo: newsletterContext }, { quoted: m });
+    await safeSend(conn, from, { text, contextInfo: newsletterContext }, { quoted: m });
     writeData(data);
 });
 
@@ -885,7 +885,7 @@ async (conn, mek, m, { from, args, reply, sender }) => {
 
     const last = user.session.lastDaily || 0;
     if (now() - last < 1000 * 60 * 60 * 24) {
-        return conn.sendMessage(from, { text: '⏳ You already claimed your daily reward. Come back tomorrow.', contextInfo: newsletterContext }, { quoted: m });
+        return safeSend(conn, from, { text: '⏳ You already claimed your daily reward. Come back tomorrow.', contextInfo: newsletterContext }, { quoted: m });
     }
 
     user.session.lastDaily = now();
@@ -893,7 +893,7 @@ async (conn, mek, m, { from, args, reply, sender }) => {
     user.coins += rewardCoins;
     addItem(user, 'food', rand(0,2));
     awardXp(user, rand(8,20));
-    await conn.sendMessage(from, { text: `🎁 Daily claimed: +${rewardCoins}🪙 and some food.`, contextInfo: newsletterContext }, { quoted: m });
+    await safeSend(conn, from, { text: `🎁 Daily claimed: +${rewardCoins}🪙 and some food.`, contextInfo: newsletterContext }, { quoted: m });
     saveUser(data, user);
 });
 
@@ -915,18 +915,18 @@ async (conn, mek, m, { from, args, reply, sender }) => {
     newsletterContext.mentionedJid = [sender];
 
     const code = (args[0]||'').toUpperCase();
-    if (!code) return conn.sendMessage(from, { text: 'Usage: .redeem <CODE>', contextInfo: newsletterContext }, { quoted: m });
+    if (!code) return safeSend(conn, from, { text: 'Usage: .redeem <CODE>', contextInfo: newsletterContext }, { quoted: m });
 
     if (code === 'FREE1') {
         user.coins += 1000;
         addItem(user, 'smallEgg', 1);
-        await conn.sendMessage(from, { text: 'Code accepted: +1000🪙 and 1 Small Egg', contextInfo: newsletterContext }, { quoted: m });
+        await safeSend(conn, from, { text: 'Code accepted: +1000🪙 and 1 Small Egg', contextInfo: newsletterContext }, { quoted: m });
     } else if (code === 'HANS1') {
         user.coins += 5000;
         addItem(user, 'booster', 1);
-        await conn.sendMessage(from, { text: 'Code accepted: +5000🪙 and 1 Booster', contextInfo: newsletterContext }, { quoted: m });
+        await safeSend(conn, from, { text: 'Code accepted: +5000🪙 and 1 Booster', contextInfo: newsletterContext }, { quoted: m });
     } else {
-        await conn.sendMessage(from, { text: 'Invalid or expired code.', contextInfo: newsletterContext }, { quoted: m });
+        await safeSend(conn, from, { text: 'Invalid or expired code.', contextInfo: newsletterContext }, { quoted: m });
     }
     saveUser(data, user);
 });
@@ -948,7 +948,7 @@ async (conn, mek, m, { from, args, reply, sender }) => {
     if (sender !== OWNER) return;
 
     const data = readData();
-    await conn.sendMessage(from, { text: `Meta keys: ${Object.keys(data.meta || {}).join(', ')}`, contextInfo: newsletterContext }, { quoted: m });
+    await safeSend(conn, from, { text: `Meta keys: ${Object.keys(data.meta || {}).join(', ')}`, contextInfo: newsletterContext }, { quoted: m });
 });
 
 /**
@@ -968,7 +968,7 @@ async (conn, mek, m, { from, args, reply, sender }) => {
     newsletterContext.mentionedJid = [sender];
 
     if (!user.inventory.smallEgg || user.inventory.smallEgg < 1) {
-        return conn.sendMessage(from, { text: 'No Small Mystery Eggs in inventory. Earn by exploring or buying.', contextInfo: newsletterContext }, { quoted: m });
+        return safeSend(conn, from, { text: 'No Small Mystery Eggs in inventory. Earn by exploring or buying.', contextInfo: newsletterContext }, { quoted: m });
     }
     removeItem(user, 'smallEgg', 1);
     // hatch result with RNG and rarity probability
@@ -981,7 +981,7 @@ async (conn, mek, m, { from, args, reply, sender }) => {
 
     const species = pick(['Glitter Mouse','Aether Cat','Rust Ham','Storm Finch','Mirror Toad']);
     user.pet = { ...user.pet, name: `${species.split(' ')[0]}_${rand(10,99)}`, species, rarity, happiness: 80, energy: 100, level: 1, xp: 0, evolved: false, createdAt: now() };
-    await conn.sendMessage(from, { text: `🎇 Egg hatched! New pet: ${user.pet.name} — ${user.pet.species} ${petBadge(user.pet.rarity)} (${user.pet.rarity})`, contextInfo: newsletterContext }, { quoted: m });
+    await safeSend(conn, from, { text: `🎇 Egg hatched! New pet: ${user.pet.name} — ${user.pet.species} ${petBadge(user.pet.rarity)} (${user.pet.rarity})`, contextInfo: newsletterContext }, { quoted: m });
     saveUser(data, user);
 });
 
@@ -1005,7 +1005,7 @@ async (conn, mek, m, { from, args, reply, sender }) => {
         '- Adjust shop prices in SHOP object',
         '- Add mobs in MOB_TEMPLATES for more variety',
     ].join('\n');
-    await conn.sendMessage(from, { text: txt, contextInfo: newsletterContext }, { quoted: m });
+    await safeSend(conn, from, { text: txt, contextInfo: newsletterContext }, { quoted: m });
 });
 
 /** Save after every command to persist changes */

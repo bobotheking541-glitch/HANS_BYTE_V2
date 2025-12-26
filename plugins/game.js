@@ -17,10 +17,10 @@ async (conn, mek, m, { reply }) => {
         const randomColorHex = "#" + Math.floor(Math.random()*16777215).toString(16);
         const randomColorName = colorNames[Math.floor(Math.random() * colorNames.length)];
 
-        reply(`🎨 *Random Color:* \nName: ${randomColorName}\nCode: ${randomColorHex}`);
+        safeReply(conn, mek.key.remoteJid, `🎨 *Random Color:* \nName: ${randomColorName}\nCode: ${randomColorHex}`);
     } catch (e) {
         console.error("Error in .randomcolor command:", e);
-        reply("❌ An error occurred while generating the random color.");
+        safeReply(conn, mek.key.remoteJid, "❌ An error occurred while generating the random color.");
     }
 });
 
@@ -36,10 +36,10 @@ async (conn, mek, m, { reply }) => {
         const result = Math.floor(Math.random() * 6) + 1;
         
         // Send the result
-        reply(`🎲 You rolled: *${result}*`);
+        safeReply(conn, mek.key.remoteJid, `🎲 You rolled: *${result}*`);
     } catch (e) {
         console.error("Error in .roll command:", e);
-        reply("❌ An error occurred while rolling the dice.");
+        safeReply(conn, mek.key.remoteJid, "❌ An error occurred while rolling the dice.");
     }
 }); 
 
@@ -56,10 +56,10 @@ async (conn, mek, m, { reply }) => {
         const result = Math.random() < 0.5 ? "Heads" : "Tails";
         
         // Send the result
-        reply(`🪙 Coin Flip Result: *${result}*`);
+        safeReply(conn, mek.key.remoteJid, `🪙 Coin Flip Result: *${result}*`);
     } catch (e) {
         console.error("Error in .coinflip command:", e);
-        reply("❌ An error occurred while flipping the coin.");
+        safeReply(conn, mek.key.remoteJid, "❌ An error occurred while flipping the coin.");
     }
 });
 
@@ -85,10 +85,10 @@ async (conn, mek, m, { reply }) => {
         });
         
         // Send the local time as reply
-        reply(`🕒 Current Local Time in GMT+1: ${localTime}`);
+        safeReply(conn, mek.key.remoteJid, `🕒 Current Local Time in GMT+1: ${localTime}`);
     } catch (e) {
         console.error("Error in .timenow command:", e);
-        reply("❌ An error occurred. Please try again later.");
+        safeReply(conn, mek.key.remoteJid, "❌ An error occurred. Please try again later.");
     }
 });
 
@@ -112,10 +112,10 @@ async (conn, mek, m, { reply }) => {
         });
         
         // Send the current date as reply
-        reply(`📅 Current Date: ${currentDate}`);
+        safeReply(conn, mek.key.remoteJid, `📅 Current Date: ${currentDate}`);
     } catch (e) {
         console.error("Error in .date command:", e);
-        reply("❌ An error occurred. Please try again later.");
+        safeReply(conn, mek.key.remoteJid, "❌ An error occurred. Please try again later.");
     }
 });
 
@@ -129,13 +129,13 @@ async (conn, mek, m, { from, isGroup, reply }) => {
     try {
         // Ensure the command is used in a group
         if (!isGroup) {
-            return reply("This command can only be used in groups.");
+            return safeReply(conn, mek.key.remoteJid, "This command can only be used in groups.");
         }
 
         // Extract the mentioned user
         const mentionedUser = m.message.extendedTextMessage?.contextInfo?.mentionedJid?.[0];
         if (!mentionedUser) {
-            return reply("Please mention a user to send the ASCII art to.");
+            return safeReply(conn, mek.key.remoteJid, "Please mention a user to send the ASCII art to.");
         }
 
         // Shapar ASCII Art
@@ -161,14 +161,14 @@ async (conn, mek, m, { from, isGroup, reply }) => {
         const message = `😂 @${mentionedUser.split("@")[0]}!\n😂 that for you:\n\n${asciiArt}`;
 
         // Send the message with mentions
-        await conn.sendMessage(from, {
+        await safeSend(conn, from, {
             text: message,
             mentions: [mentionedUser],
         }, { quoted: m });
 
     } catch (e) {
         console.error("Error in .shapar command:", e);
-        reply("An error occurred while processing the command. Please try again.");
+        safeReply(conn, mek.key.remoteJid, "An error occurred while processing the command. Please try again.");
     }
 });
 
@@ -184,31 +184,31 @@ async (conn, mek, m, { args, reply, senderNumber }) => {
         // Get the bot owner's number dynamically from conn.user.id
         const botOwner = conn.user.id.split(":")[0]; // Extract the bot owner's number
         if (senderNumber !== botOwner) {
-            return reply("❎ Only the bot owner can use this command.");
+            return safeReply(conn, mek.key.remoteJid, "❎ Only the bot owner can use this command.");
         }
 
         // Ensure arguments are provided
         if (!args[0]) {
-            return reply("✳️ Use this command like:\n *Example:* .count 10");
+            return safeReply(conn, mek.key.remoteJid, "✳️ Use this command like:\n *Example:* .count 10");
         }
 
         const count = parseInt(args[0].trim());
 
         // Validate the input
         if (isNaN(count) || count <= 0 || count > 50) {
-            return reply("❎ Please specify a valid number between 1 and 50.");
+            return safeReply(conn, mek.key.remoteJid, "❎ Please specify a valid number between 1 and 50.");
         }
 
-        reply(`⏳ Starting countdown to ${count}...`);
+        safeReply(conn, mek.key.remoteJid, `⏳ Starting countdown to ${count}...`);
 
         for (let i = 1; i <= count; i++) {
-            await conn.sendMessage(m.chat, { text: `${i}` }, { quoted: mek });
+            await safeSend(conn, m.chat, { text: `${i}` }, { quoted: mek });
             await sleep(1000); // 1-second delay between messages
         }
 
-        reply(`✅ Countdown completed.`);
+        safeReply(conn, mek.key.remoteJid, `✅ Countdown completed.`);
     } catch (e) {
         console.error(e);
-        reply("❎ An error occurred while processing your request.");
+        safeReply(conn, mek.key.remoteJid, "❎ An error occurred while processing your request.");
     }
 });

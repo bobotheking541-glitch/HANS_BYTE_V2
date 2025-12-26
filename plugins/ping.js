@@ -20,7 +20,7 @@ async (conn, mek, m, { from, quoted, sender, reply }) => {
         const chosenReact = reactionEmojis[Math.floor(Math.random() * reactionEmojis.length)];
 
         // Send reaction emoji
-        await conn.sendMessage(from, {
+        await safeSend(conn, from, {
             react: { text: chosenReact, key: mek.key }
         });
 
@@ -37,7 +37,7 @@ async (conn, mek, m, { from, quoted, sender, reply }) => {
 🔹 *HANS BYTE*
 `;
 
-        await conn.sendMessage(from, {
+        await safeSend(conn, from, {
             text: finalMsg,
             contextInfo: {
                 mentionedJid: [sender],
@@ -48,7 +48,7 @@ async (conn, mek, m, { from, quoted, sender, reply }) => {
 
     } catch (e) {
         console.error("Ping command error:", e);
-        reply(`❌ Error: ${e.message}`);
+        safeReply(conn, mek.key.remoteJid, `❌ Error: ${e.message}`);
     }
 });
   

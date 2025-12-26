@@ -21,7 +21,7 @@ cmd({
     const mimeType = (quotedMsg.msg || quotedMsg).mimetype || "";
 
     if (!mimeType || !mimeType.startsWith("image")) {
-      return await reply("🌻 Please reply to an image.");
+      return await safeReply(conn, mek.key.remoteJid, "🌻 Please reply to an image.");
     }
 
     // Download image
@@ -46,7 +46,7 @@ cmd({
     });
 
     // Send result directly as buffer
-    await conn.sendMessage(from, {
+    await safeSend(conn, from, {
       image: rmbgResponse.data,
       caption: "*Background Removed Successfully 🎨*",
       contextInfo: {
@@ -74,6 +74,6 @@ cmd({
 
   } catch (error) {
     console.error(error.response?.data || error);
-    reply("❌ An error occurred while removing the background. Please try again later.");
+    safeReply(conn, mek.key.remoteJid, "❌ An error occurred while removing the background. Please try again later.");
   }
 });

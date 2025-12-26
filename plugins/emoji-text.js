@@ -19,7 +19,7 @@ cmd(
       const text = q;
 
       if (!text) {
-        return reply("❌ Please provide some text to convert into emojis!");
+        return safeReply(conn, mek.key.remoteJid, "❌ Please provide some text to convert into emojis!");
       }
 
       // Map text to corresponding emoji characters
@@ -90,7 +90,7 @@ cmd(
 
     } catch (e) {
       console.error(e);
-      reply(`❌ Error: ${e.message}`);
+      safeReply(conn, mek.key.remoteJid, `❌ Error: ${e.message}`);
     }
   }
 );

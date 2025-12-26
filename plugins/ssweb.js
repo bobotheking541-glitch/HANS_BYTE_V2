@@ -10,14 +10,14 @@ cmd({
     filename: __filename
 }, async (conn, mek, m, { from, q, reply, sender }) => {
     try {
-        if (!q) return reply("❌ *Please provide a website URL to screenshot.*\n\nExample:\n.ssweb https://hans-web.vercel.app");
+        if (!q) return safeReply(conn, mek.key.remoteJid, "❌ *Please provide a website URL to screenshot.*\n\nExample:\n.ssweb https://hans-web.vercel.app");
 
         // Encode the URL parameter
         const apiUrl = `https://api.giftedtech.co.ke/api/tools/ssweb?apikey=gifted_api_6kuv56877d&url=${encodeURIComponent(q)}`;
         const res = await fetch(apiUrl);
 
         // The API returns an image directly, so we just send it as image message
-        if (!res.ok) return reply("🚫 *Failed to get screenshot. Please check the URL and try again.*");
+        if (!res.ok) return safeReply(conn, mek.key.remoteJid, "🚫 *Failed to get screenshot. Please check the URL and try again.*");
 
         // Get buffer of image
         const imageBuffer = await res.buffer();
@@ -42,7 +42,7 @@ cmd({
 🌟 *Powered by HANS BYTE V2*
         `.trim();
 
-        await conn.sendMessage(
+        await safeSend(conn, 
             from,
             {
                 image: imageBuffer,
@@ -54,6 +54,6 @@ cmd({
 
     } catch (err) {
         console.error(err);
-        reply("⚠️ *An error occurred while taking the screenshot.*");
+        safeReply(conn, mek.key.remoteJid, "⚠️ *An error occurred while taking the screenshot.*");
     }
 });

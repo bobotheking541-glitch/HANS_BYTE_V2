@@ -19,7 +19,7 @@ cmd({
     const allAnswers = [...data.incorrect_answers, correct].sort(() => Math.random() - 0.5);
     const answerIndex = allAnswers.findIndex(ans => ans === correct) + 1;
 
-    await reply(
+    await safeReply(conn, mek.key.remoteJid, 
       `🧠 *Trivia Time!*\n\n` +
       `❓ ${question}\n\n` +
       allAnswers.map((a, i) => `*${i + 1}.* ${a}`).join("\n") +
@@ -31,22 +31,22 @@ cmd({
 
     const collected = await client.waitForMessage(msg.key.remoteJid, filter, { timeout });
 
-    if (!collected) return reply("⏱️ Time's up! You didn't answer in time.");
+    if (!collected) return safeReply(conn, mek.key.remoteJid, "⏱️ Time's up! You didn't answer in time.");
 
     const userAnswer = parseInt(collected.message.conversation.trim());
 
     if (isNaN(userAnswer) || userAnswer < 1 || userAnswer > allAnswers.length) {
-      return reply("❌ Invalid answer format. Use the number of the correct choice.");
+      return safeReply(conn, mek.key.remoteJid, "❌ Invalid answer format. Use the number of the correct choice.");
     }
 
     if (userAnswer === answerIndex) {
-      return reply("✅ *Correct!* You're a quiz master! 🎉");
+      return safeReply(conn, mek.key.remoteJid, "✅ *Correct!* You're a quiz master! 🎉");
     } else {
-      return reply(`❌ *Wrong!* The correct answer was: *${answerIndex}. ${correct}*`);
+      return safeReply(conn, mek.key.remoteJid, `❌ *Wrong!* The correct answer was: *${answerIndex}. ${correct}*`);
     }
   } catch (err) {
     console.error(err);
-    reply("❌ Could not fetch quiz question. Try again later.");
+    safeReply(conn, mek.key.remoteJid, "❌ Could not fetch quiz question. Try again later.");
   }
 });
 
@@ -61,10 +61,10 @@ cmd({
 }, async (_ctx, _msg, _args, { reply }) => {
   try {
     const { data } = await axios.get("https://riddles-api.vercel.app/random");
-    await reply(`*Riddle:* ${data.riddle}\n*Answer:* ||${data.answer}||`);
+    await safeReply(conn, mek.key.remoteJid, `*Riddle:* ${data.riddle}\n*Answer:* ||${data.answer}||`);
   } catch (e) {
     console.error(e);
-    reply("❌ Could not fetch a riddle.");
+    safeReply(conn, mek.key.remoteJid, "❌ Could not fetch a riddle.");
   }
 });
 
@@ -88,33 +88,33 @@ cmd({
     const sentence = res.data?.result?.trim()?.replace(/\n/g, " ");
 
     if (!sentence || sentence.split(" ").length < 10) {
-      return reply("❌ Failed to get a valid sentence. Try again.");
+      return safeReply(conn, mek.key.remoteJid, "❌ Failed to get a valid sentence. Try again.");
     }
 
-    await reply(`⌨️ *Typing Speed Challenge!*\n\nType this sentence exactly as shown below:\n\n"${sentence}"\n\n⏱️ _You have 20 seconds!_`);
+    await safeReply(conn, mek.key.remoteJid, `⌨️ *Typing Speed Challenge!*\n\nType this sentence exactly as shown below:\n\n"${sentence}"\n\n⏱️ _You have 20 seconds!_`);
 
     const startTime = Date.now();
 
     const filter = m => m.key.fromMe === false && m.message?.conversation;
     const collected = await client.waitForMessage(msg.key.remoteJid, filter, { timeout: 20000 });
 
-    if (!collected) return reply("⏱️ Time's up! You didn't answer in time.");
+    if (!collected) return safeReply(conn, mek.key.remoteJid, "⏱️ Time's up! You didn't answer in time.");
 
     const userInput = collected.message.conversation.trim();
     const endTime = Date.now();
 
     if (userInput !== sentence) {
-      return reply("❌ You typed it incorrectly. Better luck next time!");
+      return safeReply(conn, mek.key.remoteJid, "❌ You typed it incorrectly. Better luck next time!");
     }
 
     const timeTaken = (endTime - startTime) / 1000;
     const words = sentence.split(" ").length;
     const wpm = Math.round((words / timeTaken) * 60);
 
-    await reply(`✅ *Correct!*\n🕒 Time: ${timeTaken.toFixed(2)} seconds\n📈 Speed: ${wpm} WPM\n🔥 Sentence Length: ${words} words`);
+    await safeReply(conn, mek.key.remoteJid, `✅ *Correct!*\n🕒 Time: ${timeTaken.toFixed(2)} seconds\n📈 Speed: ${wpm} WPM\n🔥 Sentence Length: ${words} words`);
   } catch (e) {
     console.error("TypeGame Error:", e?.response?.data || e.message);
-    reply("⚠️ Failed to start the typing game. Please try again later.");
+    safeReply(conn, mek.key.remoteJid, "⚠️ Failed to start the typing game. Please try again later.");
   }
 });
 
@@ -130,11 +130,11 @@ cmd({
   const mentionedUser = message.mentionedJid?.[0];
 
   if (!mentionedUser) {
-    return reply("❌ Please mention a user to check love compatibility.\nExample: .lovecheck @user");
+    return safeReply(conn, mek.key.remoteJid, "❌ Please mention a user to check love compatibility.\nExample: .lovecheck @user");
   }
 
   const love = Math.floor(Math.random() * 101);
-  reply(`💕 Love compatibility between *${sender.split("@")[0]}* and *${mentionedUser.split("@")[0]}*: *${love}%*`);
+  safeReply(conn, mek.key.remoteJid, `💕 Love compatibility between *${sender.split("@")[0]}* and *${mentionedUser.split("@")[0]}*: *${love}%*`);
 });
 
 // Match Me Command
@@ -148,7 +148,7 @@ cmd({
 }, async (_ctx, msg, _args, { reply, groupMetadata }) => {
   const participants = groupMetadata.participants.map(p => p.id);
   if (participants.length < 2)
-    return reply("Not enough members to match.");
+    return safeReply(conn, mek.key.remoteJid, "Not enough members to match.");
 
   const pick = () => participants.splice(Math.floor(Math.random() * participants.length), 1)[0];
   const a = pick();
@@ -160,7 +160,7 @@ cmd({
 
   const text = `Match: @${aUser}${zeroWidthSpace} ❤️ @${bUser}${zeroWidthSpace}`;
 
-  reply(text, { mentions: [{ id: a }, { id: b }] });
+  safeReply(conn, mek.key.remoteJid, text, { mentions: [{ id: a }, { id: b }] });
 });
 
 // Reverse Text Command
@@ -173,8 +173,8 @@ cmd({
   filename: __filename
 }, (_ctx, _msg, args, { reply }) => {
   const input = args.join(" ");
-  if (!input) return reply("❗️ Please provide text to reverse.");
-  reply(input.split("").reverse().join(""));
+  if (!input) return safeReply(conn, mek.key.remoteJid, "❗️ Please provide text to reverse.");
+  safeReply(conn, mek.key.remoteJid, input.split("").reverse().join(""));
 });
 
 
@@ -204,17 +204,17 @@ cmd({
                 },
             };
 
-            await conn.sendMessage(from, {
+            await safeSend(conn, from, {
                 image: { url: imageUrl },
                 caption: jokeMessage,
                 contextInfo: newsletterContext,
             }, { quoted: mek });
         } else {
-            return reply("Couldn't fetch a joke at the moment. Try again later!");
+            return safeReply(conn, mek.key.remoteJid, "Couldn't fetch a joke at the moment. Try again later!");
         }
     } catch (e) {
         console.error(e);
-        return reply(`Error: ${e.message || e}`);
+        return safeReply(conn, mek.key.remoteJid, `Error: ${e.message || e}`);
     }
 });
 
@@ -231,7 +231,7 @@ cmd({
         let imageUrl = "https://i.ibb.co/6Rxhg321/Chat-GPT-Image-Mar-30-2025-03-39-42-AM.png";
 
         if (!data.success) {
-            return reply("❌ Failed to fetch a quote. Please try again.");
+            return safeReply(conn, mek.key.remoteJid, "❌ Failed to fetch a quote. Please try again.");
         }
 
         const quoteMessage = `💬 *Quote of the Day* 💬\n\n_\"${data.response.quote}\"_\n\n- *${data.response.author}*`;
@@ -247,14 +247,14 @@ cmd({
             },
         };
 
-        await conn.sendMessage(from, {
+        await safeSend(conn, from, {
             image: { url: imageUrl },
             caption: quoteMessage,
             contextInfo: newsletterContext,
         }, { quoted: mek });
     } catch (error) {
         console.error("Error fetching quote:", error);
-        reply(`❌ Error: ${error.message}`);
+        safeReply(conn, mek.key.remoteJid, `❌ Error: ${error.message}`);
     }
 });
 
@@ -271,7 +271,7 @@ cmd({
         let imageUrl = "https://i.ibb.co/6Rxhg321/Chat-GPT-Image-Mar-30-2025-03-39-42-AM.png";
 
         if (!data.success) {
-            return reply("❌ Failed to fetch a pick-up line. Please try again.");
+            return safeReply(conn, mek.key.remoteJid, "❌ Failed to fetch a pick-up line. Please try again.");
         }
 
         // Use correct property name
@@ -288,14 +288,14 @@ cmd({
             },
         };
 
-        await conn.sendMessage(from, {
+        await safeSend(conn, from, {
             image: { url: imageUrl },
             caption: quoteMessage,
             contextInfo: newsletterContext,
         }, { quoted: mek });
     } catch (error) {
         console.error("Error fetching pick-up line:", error);
-        reply(`❌ Error: ${error.message}`);
+        safeReply(conn, mek.key.remoteJid, `❌ Error: ${error.message}`);
     }
 });
 
@@ -314,7 +314,7 @@ cmd({
         let imageUrl = "https://i.ibb.co/6Rxhg321/Chat-GPT-Image-Mar-30-2025-03-39-42-AM.png";
 
         if (!data.success) {
-            return reply("❌ Failed to fetch advice. Please try again.");
+            return safeReply(conn, mek.key.remoteJid, "❌ Failed to fetch advice. Please try again.");
         }
 
         const quoteMessage = `💬 *Advice of the Day* 💬\n\n_\"${data.result}\"_\n\n`;
@@ -330,7 +330,7 @@ cmd({
             },
         };
 
-        await conn.sendMessage(from, {
+        await safeSend(conn, from, {
             image: { url: imageUrl },
             caption: quoteMessage,
             contextInfo: newsletterContext,
@@ -338,7 +338,7 @@ cmd({
 
     } catch (error) {
         console.error("Error fetching advice:", error);
-        reply(`❌ Error: ${error.message}`);
+        safeReply(conn, mek.key.remoteJid, `❌ Error: ${error.message}`);
     }
 });
 
@@ -356,7 +356,7 @@ cmd({
         let imageUrl = "https://i.ibb.co/6Rxhg321/Chat-GPT-Image-Mar-30-2025-03-39-42-AM.png";
 
         if (!data.success) {
-            return reply("❌ Failed to fetch good night wishes. Please try again.");
+            return safeReply(conn, mek.key.remoteJid, "❌ Failed to fetch good night wishes. Please try again.");
         }
 
         const quoteMessage = `🌌 *Good Night Wishes* 🌌\n\n_\"${data.result}\"_\n\n`;
@@ -372,7 +372,7 @@ cmd({
             },
         };
 
-        await conn.sendMessage(from, {
+        await safeSend(conn, from, {
             image: { url: imageUrl },
             caption: quoteMessage,
             contextInfo: newsletterContext,
@@ -380,7 +380,7 @@ cmd({
 
     } catch (error) {
         console.error("Error fetching good night message:", error);
-        reply(`❌ Error: ${error.message}`);
+        safeReply(conn, mek.key.remoteJid, `❌ Error: ${error.message}`);
     }
 });
 
@@ -398,7 +398,7 @@ cmd({
         let imageUrl = "https://i.ibb.co/6Rxhg321/Chat-GPT-Image-Mar-30-2025-03-39-42-AM.png";
 
         if (!data.success) {
-            return reply("❌ Failed to fetch motivation quote. Please try again.");
+            return safeReply(conn, mek.key.remoteJid, "❌ Failed to fetch motivation quote. Please try again.");
         }
 
         const quoteMessage = `💪 *Motivational Quote* 💪\n\n_\"${data.result}\"_\n\n`;
@@ -414,7 +414,7 @@ cmd({
             },
         };
 
-        await conn.sendMessage(from, {
+        await safeSend(conn, from, {
             image: { url: imageUrl },
             caption: quoteMessage,
             contextInfo: newsletterContext,
@@ -422,7 +422,7 @@ cmd({
 
     } catch (error) {
         console.error("Error fetching motivational quote:", error);
-        reply(`❌ Error: ${error.message}`);
+        safeReply(conn, mek.key.remoteJid, `❌ Error: ${error.message}`);
     }
 });
 
@@ -436,13 +436,13 @@ cmd({
     filename: __filename
 }, async (conn, mek, m, { reply, q }) => {
     try {
-        if (!q) return reply("❌ Please provide a character name. Example: charquote light yagami");
+        if (!q) return safeReply(conn, mek.key.remoteJid, "❌ Please provide a character name. Example: charquote light yagami");
 
         const character = encodeURIComponent(q);
         const res = await fetch(`https://api.giftedtech.co.ke/api/anime/char-quotes?apikey=gifted_api_6kuv56877d&character=${character}`);
         const data = await res.json();
 
-        if (!data.success || !data.result) return reply("❌ Could not fetch quote for this character.");
+        if (!data.success || !data.result) return safeReply(conn, mek.key.remoteJid, "❌ Could not fetch quote for this character.");
 
         const msg = `
 ╭━[   *ANIME CHARACTER QUOTE*   ]━╮
@@ -453,9 +453,9 @@ cmd({
 ╰━━━━━━━━━━━━━━━━━━━━╯
 `;
 
-        reply(msg);
+        safeReply(conn, mek.key.remoteJid, msg);
     } catch (err) {
         console.error(err);
-        reply("❌ Error fetching the quote.");
+        safeReply(conn, mek.key.remoteJid, "❌ Error fetching the quote.");
     }
 });

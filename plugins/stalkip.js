@@ -11,9 +11,9 @@ cmd({
 },
 async (conn, mek, m, { from, quoted, q, reply, sender }) => {
     try {
-        if (!q) return reply("❌ *Please provide an IP address!*\nExample: `.ipstalk 41.90.70.195`");
+        if (!q) return safeReply(conn, mek.key.remoteJid, "❌ *Please provide an IP address!*\nExample: `.ipstalk 41.90.70.195`");
 
-        await conn.sendMessage(from, { react: { text: '⏳', key: mek.key } });
+        await safeReact('⏳', mek, conn);
 
         // Fetch IP details
         const url = `https://api.giftedtech.co.ke/api/stalk/ipstalk?apikey=gifted_api_6kuv56877d&address=${encodeURIComponent(q)}`;
@@ -21,7 +21,7 @@ async (conn, mek, m, { from, quoted, q, reply, sender }) => {
         const data = await res.json();
 
         if (!data?.success || !data?.result) {
-            return reply("❌ *Unable to fetch IP details. Try again later!*");
+            return safeReply(conn, mek.key.remoteJid, "❌ *Unable to fetch IP details. Try again later!*");
         }
 
         const ip = data.result;
@@ -59,14 +59,10 @@ async (conn, mek, m, { from, quoted, q, reply, sender }) => {
             }
         };
 
-        await conn.sendMessage(
-            from,
-            { text: ipInfo, contextInfo: newsletterContext },
-            { quoted: mek }
-        );
+        await safeReply(conn, from, ipInfo, mek, { contextInfo: newsletterContext });
 
     } catch (e) {
         console.error("IP Stalk Error:", e);
-        reply("❌ *Error fetching IP details:* " + e.message);
+        safeReply(conn, mek.key.remoteJid, "❌ *Error fetching IP details:* " + e.message);
     }
 });

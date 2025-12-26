@@ -15,7 +15,7 @@ cmd({
     const newsList = res.data?.Latest;
 
     if (!newsList || newsList.length === 0) {
-      return reply('❌ No BBC news found at the moment.');
+      return safeReply(conn, mek.key.remoteJid, '❌ No BBC news found at the moment.');
     }
 
     // Format top 3 news
@@ -28,10 +28,10 @@ cmd({
 
     message += `*© POWERED BY HANS BYTE ✘*`;
 
-    await conn.sendMessage(from, { text: message }, { quoted: mek });
+    await safeSend(conn, from, { text: message }, { quoted: mek });
 
   } catch (error) {
     console.error('BBC News Fetch Error:', error.response?.data || error.message);
-    reply('❌ Failed to fetch BBC News. Please try again later.');
+    safeReply(conn, mek.key.remoteJid, '❌ Failed to fetch BBC News. Please try again later.');
   }
 });

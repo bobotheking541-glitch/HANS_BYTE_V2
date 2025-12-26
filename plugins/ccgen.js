@@ -11,27 +11,27 @@ cmd({
 },
 async (conn, mek, m, { from, q, reply, sender }) => {
     try {
-        if (!q) return reply("❌ *Please provide card type and optional amount!*\nExample: `.ccgen Visa 3`");
+        if (!q) return safeReply(conn, mek.key.remoteJid, "❌ *Please provide card type and optional amount!*\nExample: `.ccgen Visa 3`");
 
         const args = q.trim().split(/\s+/);
         const cardType = args[0];
         const amount = args[1] ? parseInt(args[1]) : 1;
 
-        if (!cardType) return reply("❌ *Card type is required!*\nExample: `.ccgen Visa 3`");
-        if (isNaN(amount) || amount < 1 || amount > 10) return reply("❌ *Amount must be a number between 1 and 10!*");
+        if (!cardType) return safeReply(conn, mek.key.remoteJid, "❌ *Card type is required!*\nExample: `.ccgen Visa 3`");
+        if (isNaN(amount) || amount < 1 || amount > 10) return safeReply(conn, mek.key.remoteJid, "❌ *Amount must be a number between 1 and 10!*");
 
         // Send typing/react indicator
-        await conn.sendMessage(from, { react: { text: '⏳', key: mek.key } });
+        await safeSend(conn, from, { react: { text: '⏳', key: mek.key } });
 
         // Fetch data from API
         const url = `https://apis.davidcyriltech.my.id/tools/ccgen?type=${encodeURIComponent(cardType)}&amount=${amount}`;
         const res = await fetch(url);
 
-        if (!res.ok) return reply(`❌ API Error: ${res.status} ${res.statusText}`);
+        if (!res.ok) return safeReply(conn, mek.key.remoteJid, `❌ API Error: ${res.status} ${res.statusText}`);
 
         const data = await res.json();
 
-        if (!data.status) return reply("❌ *Failed to generate cards. Check card type and try again.*");
+        if (!data.status) return safeReply(conn, mek.key.remoteJid, "❌ *Failed to generate cards. Check card type and try again.*");
 
         // Build cards text
         let cardsText = `*💳 Generated ${data.total} ${data.card_type} Card(s):*\n\n`;
@@ -60,10 +60,10 @@ async (conn, mek, m, { from, q, reply, sender }) => {
         };
 
         // Send final message
-        await conn.sendMessage(from, { text: cardsText, contextInfo: newsletterContext }, { quoted: mek });
+        await safeSend(conn, from, { text: cardsText, contextInfo: newsletterContext }, { quoted: mek });
 
     } catch (e) {
         console.error("CCGen Error:", e);
-        reply("❌ *Error generating credit cards:* " + e.message);
+        safeReply(conn, mek.key.remoteJid, "❌ *Error generating credit cards:* " + e.message);
     }
 });

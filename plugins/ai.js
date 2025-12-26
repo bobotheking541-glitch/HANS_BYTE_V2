@@ -18,7 +18,7 @@ cmd({
         const json = await res.json();
 
         if (!json.success || !json.result) 
-            return reply("⚠️ *Failed to get a response from Mistral AI.*");
+            return safeReply(conn, mek.key.remoteJid, "⚠️ *Failed to get a response from Mistral AI.*");
 
         const contextInfo = {
             mentionedJid: [sender],
@@ -32,7 +32,7 @@ cmd({
         };
 
         // Send AI response as simulated forwarded message
-        await conn.sendMessage(
+        await safeSend(conn, 
             from,
             { text: `${json.result}`, contextInfo },
             { quoted: mek }
@@ -40,6 +40,6 @@ cmd({
 
     } catch (err) {
         console.error(err);
-        reply("⚠️ *An error occurred while contacting Mistral AI.*\nPlease try again later.");
+        safeReply(conn, mek.key.remoteJid, "⚠️ *An error occurred while contacting Mistral AI.*\nPlease try again later.");
     }
 });
