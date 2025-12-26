@@ -257,5 +257,31 @@
       "participant": "237694668970:11@s.whatsapp.net"
     },
     "timestamp": 1766742949000
+  },
+  {
+    "id": "3EB020768BE69E2297348D",
+    "jid": "status@broadcast",
+    "message": {
+      "key": {
+        "remoteJid": "status@broadcast",
+        "fromMe": true,
+        "id": "3EB020768BE69E2297348D"
+      },
+      "message": {
+        "reactionMessage": {
+          "key": {
+            "remoteJid": "status@broadcast",
+            "fromMe": true,
+            "id": "3EB0BC1D64BE623BDD9917"
+          },
+          "text": "👻",
+          "senderTimestampMs": "1766756043300"
+        }
+      },
+      "messageTimestamp": "1766756043",
+      "status": "PENDING",
+      "participant": "237694668970:11@s.whatsapp.net"
+    },
+    "timestamp": 1766756043000
   }
 ]

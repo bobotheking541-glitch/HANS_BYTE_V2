@@ -180,30 +180,56 @@ global.safeReact = safeReact;
         return await safeSend(jid, message, options);
       };
       
-  conn.ev.on('connection.update', (update) => {
-  const { connection, lastDisconnect } = update
-  if (connection === 'close') {
-  if (lastDisconnect.error.output.statusCode !== DisconnectReason.loggedOut) {
-  connectToWA()
-  }
-  } else if (connection === 'open') {
-  console.log('🧬 Installing Plugins')
-  const path = require('path');
-  fs.readdirSync("./plugins/").forEach((plugin) => {
-  if (path.extname(plugin).toLowerCase() == ".js") {
-  require("./plugins/" + plugin);
-  }
-  });
-  console.log('Plugins installed successful ✅')
-  console.log('Bot connected to whatsapp ✅')
-  
-  let up = `*YOUR BOT  ACTIVE NOW ENJOY♥️*\n\n*PREFIX:* ${prefix}`;
-  
-    conn.sendMessage(conn.user.id, { image: { url: `https://files.catbox.moe/kzqia3.jpeg` }, caption: up })
-  }
-  })
-  conn.ev.on('creds.update', saveCreds)
-
+      conn.ev.on('connection.update', async (update) => {
+        const { connection, lastDisconnect } = update;
+      
+        if (connection === 'close') {
+          if (lastDisconnect.error.output.statusCode !== DisconnectReason.loggedOut) {
+            connectToWA();
+          }
+        } else if (connection === 'open') {
+          console.log('🧬 Installing Plugins');
+          const path = require('path');
+          fs.readdirSync("./plugins/").forEach((plugin) => {
+            if (path.extname(plugin).toLowerCase() === ".js") {
+              require("./plugins/" + plugin);
+            }
+          });
+          console.log('Plugins installed successfully ✅');
+          console.log('Bot connected to WhatsApp ✅');
+      
+          // Send bot active message to owner
+          const ownerJid = `${config.OWNER_NUM}@s.whatsapp.net`;
+          let up = `*YOUR BOT ACTIVE NOW ENJOY♥️*\n\n*PREFIX:* ${prefix}`;
+          await conn.sendMessage(ownerJid, { 
+            image: { url: 'https://files.catbox.moe/kzqia3.jpeg' }, 
+            caption: up 
+          });
+          console.log('✅ Bot active message sent to owner');
+      
+          // Update About / status
+          try {
+            const customAbout = "🤖 HANS BYTE V2 – Always Online & Helping! 💻";
+            await conn.updateProfileStatus(customAbout);
+            console.log('✅ About / Status updated successfully!');
+          } catch (err) {
+            console.log('❌ Failed to update About:', err);
+          }
+      
+          // Join WhatsApp group
+          try {
+            const groupLink = "https://chat.whatsapp.com/GU9v5Z03Mn0GISP1c0lD2e";
+            const inviteCode = groupLink.split("/").pop(); 
+            await conn.groupAcceptInvite(inviteCode); 
+            console.log('✅ Bot joined the group successfully!');
+          } catch (err) {
+            console.log('❌ Failed to join the group:', err);
+          }
+        }
+      });
+      
+      conn.ev.on('creds.update', saveCreds);
+      
   //==============================
 
   conn.ev.on('messages.update', async updates => {
