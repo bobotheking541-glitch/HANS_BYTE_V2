@@ -134,7 +134,9 @@ No QR scanning needed in code — clean, safe, and separate from the bot.
 ## 🛠 Setup Guide
 
 1️⃣ Fork the Repository: [HANS_BYTE_v2](https://github.com/HaroldMth/HANS_BYTE_v2/)
+
 2️⃣ Set up `.env` using your pairing session ID and configuration
+
 3️⃣ Run the bot using `node index.js` (or your preferred method)
 
 ---
