@@ -16,6 +16,7 @@ const OWNERS = [
 let maps = loadLidMappings();
 // if you want auto-reload, setInterval(() => maps = loadLidMappings(), 1000 * 60 * 5);
 
+// shutdown / stop command
 cmd({
   pattern: 'shutdown',
   alias: ['stop'],
@@ -24,26 +25,34 @@ cmd({
   use: '.shutdown',
   category: 'Owner',
   filename: __filename
-}, async (conn, mek, m, { from, sender, reply, isOwner }) => {
+}, async (conn, mek, { from, sender, reply, isOwner }) => {
   try {
     console.log("Sender (raw):", sender);
     console.log("isOwner flag:", isOwner);
 
-    // fast path: if Baileys already marked them owner, respect it
+    // Owner check
     if (!isOwner) {
-      // resolve using lid mapping files
       const resolvedIsOwner = isOwnerResolved(sender, OWNERS, maps);
-      if (!resolvedIsOwner) {
-        return safeReply(conn, mek.key.remoteJid, "🚫 Owner only command!");
-      }
+      if (!resolvedIsOwner) return reply("🚫 Owner only command!");
     }
 
-    await safeReply(conn, mek.key.remoteJid, "Shutting down... 📴");
-    // give small delay to let message be sent
-    setTimeout(() => process.exit(0), 1000);
+    // React if supported
+    if (conn.sendReaction) {
+      conn.sendReaction(from, '🛑', mek.key);
+    }
+
+    // Send shutdown message
+    await reply("Shutting down... 📴");
+
+    // Small delay to allow message delivery
+    setTimeout(() => {
+      console.log('⚡ Shutdown command triggered by owner. Exiting process...');
+      process.exit(0); // PM2 or system will handle full shutdown
+    }, 1000);
+
   } catch (err) {
-    console.error('shutdown handler error:', err);
-    safeReply(conn, mek.key.remoteJid, 'Error while attempting shutdown.');
+    console.error('Shutdown handler error:', err);
+    reply('❌ Error while attempting shutdown.');
   }
 });
 
@@ -189,12 +198,24 @@ cmd({
   use: '.restart',
   category: 'Owner',
   filename: __filename
-}, async (conn, mek, m, { from, sender, reply, isOwner }) => {
+}, async (conn, mek, { from, sender, reply, isOwner }) => {
+  // Owner check
   if (!isOwner) {
     const resolvedIsOwner = isOwnerResolved(sender, OWNERS, maps);
-    if (!resolvedIsOwner) return safeReply(conn, mek.key.remoteJid, "🚫 Owner only command!");
+    if (!resolvedIsOwner) return reply("🚫 Owner only command!");
   }
-  await safeReply(conn, mek.key.remoteJid, 'Restarting... 🔁');
-  // small delay to allow message delivery
-  setTimeout(() => process.exit(1), 1000);
+
+  // React if supported
+  if (conn.sendReaction) {
+    conn.sendReaction(from, '🔁', mek.key);
+  }
+
+  // Send restarting message
+  await reply('Restarting... 🔁');
+
+  // Give message time to send
+  setTimeout(() => {
+    console.log('⚡ Restart command triggered by owner. Exiting process for PM2...');
+    process.exit(0); // PM2 will restart automatically
+  }, 1000);
 });

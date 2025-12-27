@@ -1,6 +1,8 @@
 const { cmd } = require('../command');
 const fetch = require('node-fetch');
+
 const channelurl = "https://www.whatsapp.com/channel/0029VaZDIdxDTkKB4JSWUk1O";
+
 cmd({
     pattern: "gitstalk",
     alias: ["githubstalk", "ghstalk"],
@@ -8,22 +10,31 @@ cmd({
     desc: "🔍 Stalk any GitHub user profile",
     category: "🕵️ Stalker",
     filename: __filename
-},
-async (conn, mek, m, { from, quoted, q, reply, sender }) => {
+}, async (conn, mek, m, { from, q, reply, sender }) => {
     try {
-        if (!q) return safeReply(conn, mek.key.remoteJid, "❌ *Please provide a GitHub username!*\nExample: `.gitstalk HaroldMth`");
-
-        await safeSend(conn, from, { react: { text: '⏳', key: mek.key } });
-
-        const url = `https://api.giftedtech.co.ke/api/stalk/gitstalk?apikey=gifted_api_6kuv56877d&username=${encodeURIComponent(q)}`;
-        const res = await fetch(url);
-        const data = await res.json();
-
-        if (!data?.success || !data?.result) {
-            return safeReply(conn, mek.key.remoteJid, "❌ *No GitHub profile found. Please check the username!*");
+        if (!q) {
+            return reply(
+                "❌ *Please provide a GitHub username!*\n\nExample:\n`.gitstalk HaroldMth`"
+            );
         }
 
-        const gh = data.result;
+        await safeSend(conn, from, {
+            react: { text: "⏳", key: mek.key }
+        });
+
+        const url = `https://api.github.com/users/${encodeURIComponent(q)}`;
+        const res = await fetch(url, {
+            headers: {
+                "User-Agent": "Hans-Byte-Bot"
+            }
+        });
+
+        if (!res.ok) {
+            return reply("❌ *GitHub user not found!*");
+        }
+
+        const gh = await res.json();
+
         const gitInfo = `
 *🐙 GitHub Profile Stalker*
 
@@ -33,6 +44,7 @@ async (conn, mek, m, { from, quoted, q, reply, sender }) => {
 *📑 Public Gists:* ${gh.public_gists}
 *👥 Followers:* ${gh.followers}
 *➡️ Following:* ${gh.following}
+
 *📅 Created:* ${new Date(gh.created_at).toDateString()}
 *♻️ Last Updated:* ${new Date(gh.updated_at).toDateString()}
 
@@ -40,7 +52,8 @@ async (conn, mek, m, { from, quoted, q, reply, sender }) => {
 ${gh.blog ? `*🌐 Blog:* ${gh.blog}` : ""}
 ${gh.bio ? `*📝 Bio:* ${gh.bio}` : ""}
 
-🔰 *𝐇𝐀𝐍𝐒 𝐁𝐘𝐓𝐄 𝟐*`;
+🔰 *𝐇𝐀𝐍𝐒 𝐁𝐘𝐓𝐄 𝟐*
+`;
 
         const newsletterContext = {
             mentionedJid: [sender],
@@ -49,7 +62,7 @@ ${gh.bio ? `*📝 Bio:* ${gh.bio}` : ""}
             forwardedNewsletterMessageInfo: {
                 newsletterJid: '120363422794491778@newsletter',
                 newsletterName: "𝐇𝐀𝐍𝐒 𝐁𝐘𝐓𝐄 𝟐",
-                serverMessageId: 145,
+                serverMessageId: 145
             },
             externalAdReply: {
                 title: "🐙 GitHub Stalker",
@@ -60,14 +73,15 @@ ${gh.bio ? `*📝 Bio:* ${gh.bio}` : ""}
             }
         };
 
-        await safeSend(conn, 
+        await safeSend(
+            conn,
             from,
             { text: gitInfo, contextInfo: newsletterContext },
             { quoted: mek }
         );
 
-    } catch (e) {
-        console.error("GitHub Stalk Error:", e);
-        safeReply(conn, mek.key.remoteJid, "❌ *Error fetching GitHub profile:* " + e.message);
+    } catch (err) {
+        console.error("GitHub Stalk Error:", err);
+        reply("❌ *Error fetching GitHub profile!*");
     }
 });

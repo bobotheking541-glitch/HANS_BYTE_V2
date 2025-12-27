@@ -33,7 +33,7 @@ cmd(
       const uptime = runtime(process.uptime());
 
       let madeMenu = `${pushname}
-┌─═✦🖥️ HANS BYTE ✦═─┐
+┌─═✦🖥️ ${config.BOT_NAME} ✦═─┐
 │⚡ User: ${pushname}
 │⌚ Time: ${time}
 │📆 Date: ${date}
@@ -43,7 +43,7 @@ cmd(
 │👑 Owner: ${config.OWNER_NAME}
 │📦 Version : *2.0.0*
 └───────✦✧✦──────≫
-// Ill add core commands menu firsst
+
 ┌─═✦🖥️ CORE ✦═─┐
 │${config.PREFIX}menu
 │${config.PREFIX}setprefix
@@ -51,6 +51,8 @@ cmd(
 |${config.PREFIX}readenv
 │${config.PREFIX}env
 │${config.PREFIX}ping
+│${config.PREFIX}repo
+│${config.PREFIX}menu
 │${config.PREFIX}system
 └──────────≫
 

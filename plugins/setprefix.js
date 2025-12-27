@@ -12,7 +12,7 @@ cmd({
 }, async (conn, mek, m, { sender, reply, args, isOwner }) => {
     // Check owner
     if (!isOwner) {
-        const resolvedIsOwner = isOwnerResolved(sender, OWNERS, maps);
+        const resolvedIsOwner = isOwnerResolved(sender,  maps);
         if (!resolvedIsOwner) return safeReply(conn, mek.key.remoteJid, "🚫 Only bot owners can change the prefix!");
     }
 

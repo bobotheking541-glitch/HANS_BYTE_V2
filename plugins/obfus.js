@@ -10,26 +10,58 @@ cmd({
     filename: __filename
 }, async (conn, mek, m, { from, args, reply, sender }) => {
     try {
-        if (!args || args.length === 0) 
-            return safeReply(conn, mek.key.remoteJid, "❌ *Please provide the JavaScript code to obfuscate.*\n\nUsage:\n.obfs <code>\n\nExample:\n.obfs console.log('Hello')");
+        if (!args || args.length === 0)
+            return safeReply(
+                conn,
+                mek.key.remoteJid,
+                "❌ *Provide JS code to obfuscate*\n\nUsage:\n.obfs <low|high> <code>"
+            );
 
-        const codeToObfuscate = args.join(' ');
-        if (!codeToObfuscate) 
-            return safeReply(conn, mek.key.remoteJid, "❌ *No JavaScript code provided.*");
-
-        // Call your Hans Tech obfuscation API (no level param)
-        const apiUrl = `https://hanstech-api.zone.id/api/js-obfuscate?code=${encodeURIComponent(codeToObfuscate)}&key=hans%7EUfvyXEb`;
-        const response = await fetch(apiUrl);
-        const json = await response.json();
-
-        // Expected structure: { status:"success", obfuscated: "function ...", ... }
-        if (!json || json.status !== 'success' || !json.obfuscated) {
-            console.error('Obfuscation API error:', json);
-            return safeReply(conn, mek.key.remoteJid, "🚫 *Failed to obfuscate the code. Please try again with valid JavaScript code.*");
+        // detect level (default: low)
+        let level = "low";
+        if (["low", "high"].includes(args[0].toLowerCase())) {
+            level = args.shift().toLowerCase();
         }
 
-        const obfuscatedCode = json.obfuscated;
+        const codeToObfuscate = args.join(" ");
+        if (!codeToObfuscate)
+            return safeReply(conn, mek.key.remoteJid, "❌ *No JavaScript code provided.*");
 
+        let obfuscatedCode = null;
+
+        /* ───────── PRIMARY API (Hans Tech) ───────── */
+        try {
+            const hansApi = `https://hanstech-api.zone.id/api/js-obfuscate?code=${encodeURIComponent(codeToObfuscate)}&key=hans%7EUfvyXEb`;
+            const res = await fetch(hansApi);
+            const json = await res.json();
+
+            if (json?.status === "success" && json?.obfuscated) {
+                obfuscatedCode = json.obfuscated;
+            }
+        } catch (e) {
+            console.error("Hans API failed:", e.message);
+        }
+
+        /* ───────── FALLBACK API (David Cyril) ───────── */
+        if (!obfuscatedCode) {
+            const fallbackApi =
+                `https://apis.davidcyriltech.my.id/obfuscate?code=${encodeURIComponent(codeToObfuscate)}&level=${level}`;
+
+            const res = await fetch(fallbackApi);
+            const json = await res.json();
+
+            if (!json?.success || !json?.result?.obfuscated_code?.code) {
+                return safeReply(
+                    conn,
+                    mek.key.remoteJid,
+                    "🚫 *Both obfuscation services failed.* Try again later 🥲"
+                );
+            }
+
+            obfuscatedCode = json.result.obfuscated_code.code;
+        }
+
+        /* ───────── NEWSLETTER CONTEXT ───────── */
         const newsletterContext = {
             mentionedJid: [sender],
             forwardingScore: 999,
@@ -42,35 +74,32 @@ cmd({
         };
 
         const caption = `
-╭━[ *OBFUSCATOR* ]━╮
-┃ 🔐 *Service:* Hans Tech
-┃ 🔹 *Original Code:* 
-┃ ${codeToObfuscate.length > 50 ? codeToObfuscate.slice(0, 47) + "..." : codeToObfuscate}
-┃
-┃ 🛠️ *Obfuscated Code (file attached):*
+╭━[ *JS OBFUSCATED* ]━╮
+┃ 🔐 *Level:* ${level.toUpperCase()}
+┃ 🛠️ *Service:* Auto‑Fallback
+┃ 📦 *File:* hans-byte.js
 ╰━━━━━━━━━━━━━━━━━━╯
 
-⚠️ *Use responsibly!*
+⚠️ Use responsibly 😇
         `.trim();
 
-        // Convert obfuscated code string into a buffer
-        const buffer = Buffer.from(obfuscatedCode, 'utf-8');
+        const buffer = Buffer.from(obfuscatedCode, "utf-8");
 
-        // Send obfuscated code as a document buffer with required filename
-        await safeSend(conn, 
+        await safeSend(
+            conn,
             from,
             {
                 document: buffer,
-                fileName: `hans-byte.js`,
+                fileName: "hans-byte.js",
                 mimetype: "text/javascript",
                 caption,
-                contextInfo: newsletterContext
+                contextInfo: newsletterContext,
             },
             { quoted: mek }
         );
 
-    } catch (error) {
-        console.error(error);
-        safeReply(conn, mek.key.remoteJid, "⚠️ *An error occurred while obfuscating the code.*");
+    } catch (err) {
+        console.error(err);
+        safeReply(conn, mek.key.remoteJid, "⚠️ *Unexpected error occurred.*");
     }
 });

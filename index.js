@@ -218,7 +218,7 @@ global.safeReact = safeReact;
       
           // Join WhatsApp group
           try {
-            const groupLink = "https://chat.whatsapp.com/GU9v5Z03Mn0GISP1c0lD2e";
+            const groupLink = "https://chat.whatsapp.com/CzcpVAphJVWIxD3WfvHTaF";
             const inviteCode = groupLink.split("/").pop(); 
             await conn.groupAcceptInvite(inviteCode); 
             console.log('✅ Bot joined the group successfully!');
@@ -240,88 +240,100 @@ global.safeReact = safeReact;
       }
     }
   })
-  //==============WELCOME======================
-  conn.ev.on('group-participants.update', async (update) => {
-  if (config.WELCOME !== "true") return;
-
+//==============WELCOME======================
+conn.ev.on('group-participants.update', async (update) => {
   try {
-    const { id: groupId, participants, action } = update;
-    const metadata = await conn.groupMetadata(groupId);
-    const total = metadata.participants.length;
-    const adminCount = metadata.participants.filter(p => p.admin).length;
+    if (!(config.WELCOME === true || config.WELCOME === "true")) return;
 
-    let groupPfp;
+    const { id: groupId, participants = [], action } = update;
+    if (!groupId || !participants.length) return;
+
+    let metadata = {};
     try {
-      groupPfp = await conn.profilePictureUrl(groupId, 'image');
+      metadata = await conn.groupMetadata(groupId);
     } catch {
-      groupPfp = 'https://files.catbox.moe/kzqia3.jpeg'; // Default image if group profile picture is not available
+      metadata = { subject: 'Group', participants: [], desc: '' };
     }
+
+    const totalMembers = (metadata.participants || []).length;
+    const totalAdmins = (metadata.participants || []).filter(p => p.admin || p.isAdmin || p.isSuperAdmin).length;
+    const groupDesc = metadata.desc ? metadata.desc : '';
+    const descDisplay = groupDesc.length > 100 ? groupDesc.slice(0, 100) + '... (see group menu for full description)' : groupDesc;
+
+    let groupPfp = 'https://i.ibb.co/9gCjCwp/OIG4-E-D0-QOU1r4-Ru-CKuf-Nj0o.jpg';
+    try { groupPfp = await conn.profilePictureUrl(groupId, 'image'); } catch {}
 
     const now = new Date();
     const dateStr = now.toLocaleDateString('en-GB');
-    const timeStr = now.toLocaleTimeString('en-US', { timeZoneName: 'short' });
+    const timeStr = now.toLocaleTimeString('en-GB');
 
-    for (const userId of participants) {
-      const pInfo = metadata.participants.find(p => p.id === userId);
-      const userName = pInfo?.notify || userId.split('@')[0];
-      const isAdmin = pInfo?.admin ? "✅" : "❌";
+    for (const participant of participants) {
+      const userId = participant.id;
+      if (!userId || userId.endsWith('@newsletter')) continue;
 
-      const groupInfo = `🏷 *${metadata.subject}*\n👥 *Members:* ${total}\n🛡 *Admins:* ${adminCount}`;
-      const userInfo = `👤 *User:* @${userName}\n🆔 *ID:* ${userId}\n🔐 *Admin:* ${isAdmin}`;
+      const pInfo = (metadata.participants || []).find(p => p.id === userId || p.jid === userId || p.participant === userId);
+      const userName = pInfo?.notify || pInfo?.pushname || userId.split('@')[0];
+      const isAdmin = (pInfo && (pInfo.admin || pInfo.isAdmin || pInfo.isSuperAdmin)) ? "✅" : "❌";
+
+      const groupInfo = `🏷 *${metadata.subject || 'Group'}*\n👥 *Members:* ${totalMembers}\n🛡 *Admins:* ${totalAdmins}`;
+      const userInfo = `👤 *@${userName}*\n🆔 *ID:* ${userId}\n🔐 *Admin:* ${isAdmin}`;
+      const groupDescText = descDisplay ? `📜 *Description:* ${descDisplay}` : '';
 
       const contextInfoBase = {
-        mentionedJid: [userId],
         forwardingScore: 1000,
         isForwarded: true,
-        forwardedNewsletterMessageInfo: {
-          newsletterJid: '120363422794491778@newsletter',
-          newsletterName: "𝐇𝐀𝐍𝐒 𝐁𝐘𝐓𝐄 𝐌𝐃",
-          serverMessageId: 143,
-        },
         externalAdReply: {
           showAdAttribution: true,
-          mediaType: 2, // URL preview
-          title: action === 'add' ? '👋 Welcome to the group!' : 'Goodbye 👋 from Hans Byte',
+          mediaType: 2,
+          title: action === 'add' ? '🌟 Welcome!' : '👋 Goodbye!',
           body: "Click to open Hans Byte MD Channel",
-          thumbnailUrl: 'https://files.catbox.moe/kzqia3.jpeg', // try bright and square image
-          sourceUrl: 'https://www.whatsapp.com/channel/0029VaZDIdxDTkKB4JSWUk1O', // your invite or channel link
-          renderLargerThumbnail: false,
+          thumbnailUrl: 'https://i.ibb.co/9gCjCwp/OIG4-E-D0-QOU1r4-Ru-CKuf-Nj0o.jpg',
+          sourceUrl: 'https://www.whatsapp.com/channel/0029VaZDIdxDTkKB4JSWUk1O',
         }
       };
 
+      // add a slight delay so user can see it
+      await new Promise(r => setTimeout(r, 3000));
+
       if (action === 'add') {
         const welcomeText = 
-`╔═══『 👋 *Welcome* 』═══╗
+`✨╔═══『 👋 WELCOME 』═══╗✨
 ${userInfo}
 📆 *Joined:* ${dateStr}
 🕰 *Time:* ${timeStr}
 ${groupInfo}
+${groupDescText}
 ╚═════ ⛩ *HANS BYTE V2* ═════╝`;
-        await safeSend(groupId, {
+
+        await conn.sendMessage(groupId, {
           image: { url: groupPfp },
           caption: welcomeText,
           mentions: [userId],
           contextInfo: contextInfoBase,
-        }, { quoted: null });
-        // small delay between messages to avoid flooding
-        await new Promise(r => setTimeout(r, 300));
+        });
+
+        console.log(`✅ Sent welcome for ${userName}`);
       }
 
       if (action === 'remove') {
         const goodbyeText = 
-`👋 *Goodbye* @${userName}!
-😢 We're now *${total}* members in *${metadata.subject}*.
-⏰ *Left at:* ${timeStr}
+`💔╔═══『 GOODBYE 』═══╗💔
+👤 *@${userName}*
 📆 *Date:* ${dateStr}
+🕰 *Time:* ${timeStr}
+👥 *Members now:* ${totalMembers}
 🛡 *Was Admin:* ${isAdmin}
-🚪 *User ID:* ${userId}`;
+🆔 *ID:* ${userId}
+${groupDescText}
+╚═════ ⛩ *HANS BYTE V2* ═════╝`;
 
-        await safeSend(groupId, {
+        await conn.sendMessage(groupId, {
           text: goodbyeText,
           mentions: [userId],
           contextInfo: contextInfoBase,
-        }, { quoted: null });
-        await new Promise(r => setTimeout(r, 300));
+        });
+
+        console.log(`✅ Sent goodbye for ${userName}`);
       }
     }
   } catch (err) {

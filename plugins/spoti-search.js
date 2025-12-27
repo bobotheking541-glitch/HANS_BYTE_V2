@@ -1,98 +1,81 @@
 const { cmd } = require("../command");
 const axios = require("axios");
 
+const newsletterContext = {
+    mentionedJid: [],
+    forwardingScore: 1000,
+    isForwarded: true,
+    forwardedNewsletterMessageInfo: {
+        newsletterJid: '120363422794491778@newsletter',
+        newsletterName: "𝐇𝐀𝐍𝐒 𝐁𝐘𝐓𝐄 𝐕2",
+        serverMessageId: 143,
+    }
+};
+
+// ===================== /spotify Command =====================
 cmd({
-    pattern: "spoti",
-    alias: ["spotify", "spotidl"],
-    desc: "🎶 Download or Search Spotify songs in Hans Byte Style ⚡",
-    category: "download",
+    pattern: "spotify",
+    alias: ['spdl', 'spotdl'],
     react: "🎧",
-    use: ".spoti <song-name or spotify-url>",
-    filename: __filename,
-}, async (conn, mek, m, { q, reply, sender }) => {
+    desc: "Download audio from Spotify",
+    category: "download",
+    filename: __filename
+}, async (conn, mek, m, { from, q, reply, sender }) => {
+    if (!q || !q.includes("open.spotify.com")) {
+        return reply("*❌ Please provide a valid Spotify track URL*");
+    }
+
     try {
-        if (!q) {
-            return safeReply(conn, mek.key.remoteJid, 
-`┌─❖ ⚡ *HANS BYTE V2* ⚡
-│
-├  🎵 Use:  *.spoti <song-name>*
-├  📥 Or:   *.spoti <spotify-url>*
-│
-└─❖ Example: *.spoti another love*`
-            );
+        const messageContext = { ...newsletterContext, mentionedJid: [sender] };
+
+        const api = `https://api.giftedtech.co.ke/api/download/spotifydl?apikey=gifted_api_6kuv56877d&url=${encodeURIComponent(q)}`;
+        const res = await fetch(api);
+        const data = await res.json();
+
+        if (!data.success || !data.result?.download_url) {
+            return reply("*❌ Failed to get Spotify download link*");
         }
 
-        let track;
-        let dlData;
+        const { title, duration, thumbnail, download_url } = data.result;
 
-        if (q.match(/https?:\/\/open\.spotify\.com\/track\//i)) {
-            // Direct URL download
-            const dlUrl = `https://api.giftedtech.co.ke/api/download/spotifydl?apikey=gifted_api_6kuv56877d&url=${encodeURIComponent(q)}`;
-            const dlRes = await axios.get(dlUrl);
-            dlData = dlRes.data;
-            if (!dlData.success || !dlData.result?.download_url)
-                return safeReply(conn, mek.key.remoteJid, "😵 *Oops!* Couldn't download that Spotify track!");
-            track = dlData.result;
+        const infoMsg = `
+╔═━「 🎵 𝙎𝙋𝙊𝙏𝙄𝙁𝙔 𝘿𝙇 」━═╗
 
-        } else {
-            // Search first → then download
-            const searchUrl = `https://api.giftedtech.co.ke/api/search/spotifysearch?apikey=gifted_api_6kuv56877d&query=${encodeURIComponent(q)}`;
-            const searchRes = await axios.get(searchUrl);
-            const searchData = searchRes.data;
+⫸ 🎧 *Title:* ${title}
+⫸ ⏱️ *Duration:* ${duration}
+⫸ 📁 *Format:* MP3
+⫸ 🔗 *Link:* ${q}
 
-            if (!searchData.success || !searchData.results?.length)
-                return safeReply(conn, mek.key.remoteJid, "😵 *No results!* Try another name.");
+╚═━「 𝐇𝐀𝐍𝐒 𝐁𝐘𝐓𝐄 V2 」━═╝
+`.trim();
 
-            const first = searchData.results[0];
-
-            const dlUrl = `https://api.giftedtech.co.ke/api/download/spotifydl?apikey=gifted_api_6kuv56877d&url=${encodeURIComponent(first.url)}`;
-            const dlRes = await axios.get(dlUrl);
-            dlData = dlRes.data;
-
-            if (!dlData.success || !dlData.result?.download_url)
-                return safeReply(conn, mek.key.remoteJid, "😵 *Download failed!* Try again later.");
-
-            track = dlData.result;
-            track.artist = first.artist; // enrich with artist from search
-        }
-
-        const { title, duration, thumbnail, download_url } = track;
-
-        const newsletterContext = {
-            mentionedJid: [sender],
-            forwardingScore: 1000,
-            isForwarded: true,
-            forwardedNewsletterMessageInfo: {
-                newsletterJid: '120363422794491778@newsletter',
-                newsletterName: "𝐇𝐀𝐍𝐒 𝐁𝐘𝐓𝐄 𝟐",
-                serverMessageId: 145,
-            },
-        };
-
-        // Show info card
-        await safeSend(conn, mek.chat, {
+        // Send info card
+        await conn.sendMessage(from, {
             image: { url: thumbnail },
-            caption: 
-`┌─❖ 🎶 *TRACK FOUND* 🎶
-│
-├  🎵 *Title:* ${title}
-├  👤 *Artist:* ${track.artist || "Unknown"}
-├  ⏱️ *Duration:* ${duration}
-│
-└─❖ 📥 *Downloading now...*`,
-            contextInfo: newsletterContext
+            caption: infoMsg,
+            contextInfo: messageContext
         }, { quoted: mek });
 
         // Send audio
-        await safeSend(conn, mek.chat, {
+        await conn.sendMessage(from, {
             audio: { url: download_url },
-            mimetype: "audio/mp4",
+            mimetype: 'audio/mp4',
             fileName: `${title}.mp3`,
-            contextInfo: newsletterContext
+            ptt: false,
+            contextInfo: messageContext
         }, { quoted: mek });
 
-    } catch (e) {
-        console.error("Spotify Error:", e.response?.status, e.response?.data || e.message);
-        safeReply(conn, mek.key.remoteJid, "💥 *Yikes!* Something went wrong while processing your request!\nTry again later.");
+        // Send as document
+        await conn.sendMessage(from, {
+            document: { url: download_url },
+            mimetype: 'audio/mp4',
+            fileName: `${title}.mp3`,
+            caption: "*📁 HANS BYTE V2*",
+            contextInfo: messageContext
+        }, { quoted: mek });
+
+    } catch (err) {
+        console.error("Spotify DL Error:", err);
+        return reply(`*❌ Error:* ${err.message}`);
     }
 });

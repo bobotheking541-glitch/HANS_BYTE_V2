@@ -11,27 +11,87 @@ cmd({
 },
 async (conn, mek, m, { from, q, reply, sender }) => {
     try {
-        if (!q) return safeReply(conn, mek.key.remoteJid, "❌ *Please provide card type and optional amount!*\nExample: `.ccgen Visa 3`");
+        console.log("===== CCGEN DEBUG START =====");
+
+        if (!q) {
+            console.log("❌ No query provided");
+            return safeReply(conn, mek.key.remoteJid, "❌ *Please provide card type and optional amount!*\nExample: `.ccgen Visa 3`");
+        }
+
+        console.log("Raw input:", q);
 
         const args = q.trim().split(/\s+/);
-        const cardType = args[0];
+        console.log("Parsed args:", args);
+
+        const rawType = args[0];
         const amount = args[1] ? parseInt(args[1]) : 1;
 
-        if (!cardType) return safeReply(conn, mek.key.remoteJid, "❌ *Card type is required!*\nExample: `.ccgen Visa 3`");
-        if (isNaN(amount) || amount < 1 || amount > 10) return safeReply(conn, mek.key.remoteJid, "❌ *Amount must be a number between 1 and 10!*");
+        console.log("Raw type:", rawType);
+        console.log("Parsed amount:", amount);
 
-        // Send typing/react indicator
+        if (!rawType) {
+            console.log("❌ No card type provided");
+            return safeReply(conn, mek.key.remoteJid, "❌ *Card type is required!*");
+        }
+
+        if (isNaN(amount) || amount < 1 || amount > 10) {
+            console.log("❌ Invalid amount");
+            return safeReply(conn, mek.key.remoteJid, "❌ *Amount must be a number between 1 and 10!*");
+        }
+
+        // Normalize card type
+        function normalizeCardType(input) {
+            const map = {
+                visa: "Visa",
+                mastercard: "MasterCard",
+                master: "MasterCard",
+                "americanexpress": "American Express",
+                amex: "American Express",
+                jcb: "JCB"
+            };
+            const key = input.toLowerCase().replace(/\s+/g, "");
+            console.log("Normalized key:", key, "->", map[key] ?? null);
+            return map[key] ?? null;
+        }
+
+        const cardType = normalizeCardType(rawType);
+
+        if (!cardType) {
+            console.log("❌ Invalid card type after normalization");
+            return safeReply(
+                conn,
+                mek.key.remoteJid,
+                "❌ *Invalid card type!*\nSupported: Visa, MasterCard, American Express, JCB\nExample: `.ccgen visa 3`"
+            );
+        }
+
+        console.log("Final card type for API:", cardType);
+
         await safeSend(conn, from, { react: { text: '⏳', key: mek.key } });
 
-        // Fetch data from API
+        // Build API URL
         const url = `https://apis.davidcyriltech.my.id/tools/ccgen?type=${encodeURIComponent(cardType)}&amount=${amount}`;
+        console.log("Final API URL:", url);
+
+        // Fetch API
         const res = await fetch(url);
+        console.log("Raw response status:", res.status, res.statusText);
 
-        if (!res.ok) return safeReply(conn, mek.key.remoteJid, `❌ API Error: ${res.status} ${res.statusText}`);
+        const textRes = await res.text();
+        console.log("Raw response text:", textRes);
 
-        const data = await res.json();
+        if (!res.ok) {
+            console.log("❌ API returned non-ok status");
+            return safeReply(conn, mek.key.remoteJid, `❌ API Error: ${res.status} ${res.statusText}\nResponse: ${textRes}`);
+        }
 
-        if (!data.status) return safeReply(conn, mek.key.remoteJid, "❌ *Failed to generate cards. Check card type and try again.*");
+        const data = JSON.parse(textRes);
+        console.log("Parsed JSON data:", data);
+
+        if (!data.status) {
+            console.log("❌ API returned status false");
+            return safeReply(conn, mek.key.remoteJid, `❌ API Message: ${data.message || "Unknown error"}`);
+        }
 
         // Build cards text
         let cardsText = `*💳 Generated ${data.total} ${data.card_type} Card(s):*\n\n`;
@@ -40,7 +100,6 @@ async (conn, mek, m, { from, q, reply, sender }) => {
         });
         cardsText += "\n🔰 *𝐇𝐀𝐍𝐒 𝐁𝐘𝐓𝐄 𝟐*";
 
-        // Newsletter context
         const newsletterContext = {
             mentionedJid: [sender],
             forwardingScore: 1000,
@@ -59,11 +118,12 @@ async (conn, mek, m, { from, q, reply, sender }) => {
             }
         };
 
-        // Send final message
         await safeSend(conn, from, { text: cardsText, contextInfo: newsletterContext }, { quoted: mek });
 
+        console.log("===== CCGEN DEBUG END =====");
+
     } catch (e) {
-        console.error("CCGen Error:", e);
+        console.error("CCGEN ERROR:", e);
         safeReply(conn, mek.key.remoteJid, "❌ *Error generating credit cards:* " + e.message);
     }
 });
