@@ -1,6 +1,6 @@
 {
   "name": "HANS-BYTE",
-  "version": "4.0.0",
+  "version": "4.0.0", 
   "description": "A WHATSAPP BOT CREATED BY HANS TECH",
   "main": "index.js",
   "scripts": {
