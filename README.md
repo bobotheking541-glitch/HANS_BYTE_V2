@@ -76,8 +76,11 @@ HANS BYTE v2 can be hosted on **any Node.js capable panel**, VPS, or cloud servi
 HANS BYTE v2 uses a **separate pairing site** to generate a session:
 
 1. Visit: [HANS BYTE PAIRING SITE](https://hansbytemd-pair.onrender.com/)
+
 2. Enter your phone number to receive a **pair code**
+
 3. Use the pair code on the site to generate your `SESSION_ID`
+
 4. Paste the `SESSION_ID` in your `.env` file
 
 ### Example `.env`
