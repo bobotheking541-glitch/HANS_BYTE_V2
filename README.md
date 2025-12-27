@@ -133,7 +133,7 @@ No QR scanning needed in code — clean, safe, and separate from the bot.
 
 ## 🛠 Setup Guide
 
-1️⃣ Fork the Repository: [HANS_BYTE_v2](https://github.com/HaroldMth/HANS_BYTE_v2/)
+1️⃣ Fork the Repository: [HANS_BYTE_v2](https://github.com/HaroldMth/HANS_BYTE_v2/fork)
 
 2️⃣ Set up `.env` using your pairing session ID and configuration
 
