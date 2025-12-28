@@ -1,12 +1,17 @@
 const { cmd } = require('../command');
 const fetch = require('node-fetch');
-const axios = require('axios');
 const os = require('os');
 
 const REPO_OWNER = 'Haroldmth';
 const REPO_NAME = 'HANS_BYTE_V2';
 const REPO_URL = `https://github.com/${REPO_OWNER}/${REPO_NAME}`;
-const CHANNEL_URL = 'https://whatsapp.com/channel/0029Vb6F9V9FHWpsqWq1CF14';
+
+let cache = {
+    data: null,
+    time: 0
+};
+
+const CACHE_TTL = 10 * 60 * 1000; // 10 minutes
 
 function formatUptime(seconds) {
     const h = Math.floor(seconds / 3600);
@@ -15,38 +20,44 @@ function formatUptime(seconds) {
     return `${h}h ${m}m ${s}s`;
 }
 
+async function fetchWithTimeout(url, timeout = 5000) {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), timeout);
+
+    try {
+        const res = await fetch(url, {
+            headers: { 'User-Agent': 'HANS-BYTE-BOT' },
+            signal: controller.signal
+        });
+        return await res.json();
+    } catch {
+        return null;
+    } finally {
+        clearTimeout(timer);
+    }
+}
+
 cmd({
     pattern: 'repo',
     react: '📦',
     desc: 'HANS BYTE V2 repository & bot information',
     category: 'info',
     filename: __filename
-}, async (conn, mek, m, { from, pushname, reply }) => {
+}, async (conn, mek, m, { from, reply }) => {
     try {
-        // Fetch GitHub repo info
-        const repoRes = await fetch(
-            `https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}`,
-            { headers: { 'User-Agent': 'HANS-BYTE-BOT' } }
-        );
-
-        if (!repoRes.ok) {
-            return reply('❌ Unable to fetch HANS BYTE V2 repository info.');
+        // ⚡ serve from cache
+        if (cache.data && Date.now() - cache.time < CACHE_TTL) {
+            return conn.sendMessage(from, cache.data, { quoted: mek });
         }
 
-        const gh = await repoRes.json();
+        // 🚀 fetch in parallel
+        const [repo, changelog] = await Promise.all([
+            fetchWithTimeout(`https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}`),
+            fetchWithTimeout(`https://raw.githubusercontent.com/${REPO_OWNER}/${REPO_NAME}/main/data/changelog.json`)
+        ]);
 
-        // Fetch version from changelog.json
-        let version = 'Unknown';
-        try {
-            const { data } = await axios.get(
-                `https://raw.githubusercontent.com/${REPO_OWNER}/${REPO_NAME}/main/data/changelog.json`
-            );
-            version = data.version || 'Unknown';
-        } catch {
-            version = 'Not found';
-        }
+        const version = changelog?.version || 'Unknown';
 
-        // System info
         const uptime = formatUptime(process.uptime());
         const ramUsed = (process.memoryUsage().heapUsed / 1024 / 1024).toFixed(2);
         const ramTotal = (os.totalmem() / 1024 / 1024).toFixed(0);
@@ -58,60 +69,32 @@ cmd({
 ┇│•📛 Name: HANS BYTE V2
 ┇│•👑 Owner: HANS TECH
 ┇│•⚡ Repo: ${REPO_URL}
-┇│•🔗 Session: https://hans-byte-pair-site.onrender.com/
 ┇│•🔖 Version: ${version}
 ┇│•⏳ Uptime: ${uptime}
 ┇│•💾 RAM: ${ramUsed}MB / ${ramTotal}MB
-┇│•⚙️ Platform: ${os.platform()} ${os.arch()}
-┇│•⭐ Stars: ${gh.stargazers_count}
-┇│•🍴 Forks: ${gh.forks_count}
-┇│•🐞 Issues: ${gh.open_issues_count}
-┇│•🧩 Language: ${gh.language || 'N/A'}
-┇╰─・─・─・─・─・─・─・─╯
-╰─・─・─・─・─・──・─・─・─╯
-> 🚀 POWERED BY HANS BYTE V2
+┇│•⭐ Stars: ${repo?.stargazers_count || 0}
+┇│•🍴 Forks: ${repo?.forks_count || 0}
+┇│•🐞 Issues: ${repo?.open_issues_count || 0}
+┇│•🧩 Language: ${repo?.language || 'N/A'}
+┇╰─────────────────────
+╰─> 🚀 POWERED BY HANS BYTE V2
 `;
 
-        const interactivePayload = {
+        const messagePayload = {
             image: { url: 'https://files.catbox.moe/wdi4cg.jpeg' },
-            caption,
-            footer: 'HANS BYTE V2',
-            interactiveButtons: [
-                {
-                    name: 'cta_url',
-                    buttonParamsJson: JSON.stringify({
-                        display_text: '⭐ STAR REPO',
-                        url: REPO_URL
-                    })
-                },
-                {
-                    name: 'cta_url',
-                    buttonParamsJson: JSON.stringify({
-                        display_text: '🍴 FORK REPO',
-                        url: `${REPO_URL}/fork`
-                    })
-                },
-                {
-                    name: 'cta_url',
-                    buttonParamsJson: JSON.stringify({
-                        display_text: '📢 JOIN CHANNEL',
-                        url: CHANNEL_URL
-                    })
-                },
-                {
-                    name: 'cta_copy',
-                    buttonParamsJson: JSON.stringify({
-                        display_text: '🔗 COPY REPO LINK',
-                        copy_code: REPO_URL
-                    })
-                }
-            ]
+            caption
         };
 
-        await safeSend(conn, from, interactivePayload, { quoted: mek });
+        // 💾 cache final payload
+        cache = {
+            data: messagePayload,
+            time: Date.now()
+        };
+
+        await conn.sendMessage(from, messagePayload, { quoted: mek });
 
     } catch (err) {
         console.error('Repo command error:', err);
-        reply('❌ Error while loading HANS BYTE V2 repository info.');
+        reply('❌ Error while loading repository info.');
     }
 });

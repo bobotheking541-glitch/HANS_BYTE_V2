@@ -1,6 +1,6 @@
 {
   "name": "HANS-BYTE",
-  "version": "4.0.0", 
+  "version": "4.0.0",
   "description": "A WHATSAPP BOT CREATED BY HANS TECH",
   "main": "index.js",
   "scripts": {
@@ -34,8 +34,8 @@
     "express": "latest",
     "ffmpeg": "^0.0.4",
     "ffmpeg-static": "^5.2.0",
-    "file_size_url": "1.0.4",
     "file-type": "^16.5.3",
+    "file_size_url": "1.0.4",
     "fluent-ffmpeg": "^2.1.2",
     "form-data": "^4.0.0",
     "fs": "^0.0.1-security",
@@ -44,6 +44,7 @@
     "google-tts-api": "^2.0.2",
     "jimp": "^1.6.0",
     "jsqr": "^1.4.0",
+    "lowdb": "^7.0.1",
     "megajs": "^1.1.0",
     "mime-types": "^3.0.1",
     "moment-timezone": "^0.5.45",
@@ -57,17 +58,22 @@
     "qrcode-terminal": "^0.12.0",
     "ruhend-scraper": "8.0.3",
     "sequelize": "^6.37.5",
-    "sharp": "^0.34.4",
-    "sqlite3": "^5.1.7",
+    "sharp": "0.34.5",
+    "sqlite": "^5.1.1",
     "util": "^0.12.4",
     "vm": "^0.1.0",
-    "wa_set_pkg": "1.0.5",
     "wa-sticker-formatter": "^4.4.4",
+    "wa_set_pkg": "1.0.5",
     "website-scraper": "^5.3.1",
     "yt-search": "2.11.1"
   },
   "devDependencies": {
     "patch-package": "^8.0.0",
     "postinstall-postinstall": "^2.1.0"
+  },
+  "pnpm": {
+    "overrides": {
+      "sharp": "0.34.5"
+    }
   }
 }

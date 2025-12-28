@@ -5,6 +5,8 @@ store/message_count.json
 store/message.json
 config.env
 .env
+plugins/temp/
+plugins/repos/
 database.db
 store/
 undefined.jpg

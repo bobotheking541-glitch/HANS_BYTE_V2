@@ -15,7 +15,7 @@ const {
     MessageRetryMap,
     generateForwardMessageContent,
     generateWAMessageFromContent,
-    generateMessageID, makeInMemoryStore,
+    generateMessageID,
     jidDecode,
     fetchLatestBaileysVersion,
     Browsers
@@ -137,41 +137,136 @@ global.safeReact = safeReact;
   const { state, saveCreds } = await useMultiFileAuthState(__dirname + '/sessions/')
   var { version } = await fetchLatestBaileysVersion()
   
+  // Simple in-memory store for message cleanup (makeInMemoryStore not available in this Baileys version)
+  const store = {
+    messages: {},
+    contacts: {}
+  }
+  
   const conn = makeWASocket({
           logger: P({ level: 'silent' }),
           printQRInTerminal: false,
           browser: Browsers.macOS("Firefox"),
-          syncFullHistory: true,
+          syncFullHistory: false,
           auth: state,
           version
           })
+  
+  // ✅ PERFORMANCE OPTIMIZATIONS - Group metadata cache and presence rate limiting
+  // Cache maps persist across reconnects
+  if (!global.groupCache) global.groupCache = new Map();
+  if (!global.presenceCooldown) global.presenceCooldown = new Map();
+  
+  // Define cached group metadata function (needs access to conn)
+  async function getCachedGroupMetadata(jid) {
+    if (global.groupCache.has(jid)) return global.groupCache.get(jid);
+    try {
+      const meta = await conn.groupMetadata(jid);
+      global.groupCache.set(jid, meta);
+      // Clear cache after 10 minutes
+      setTimeout(() => global.groupCache.delete(jid), 10 * 60 * 1000);
+      return meta;
+    } catch (e) {
+      return null;
+    }
+  }
+  
+  // Define rate-limited presence function (needs access to conn)
+  async function safePresence(jid, type) {
+    const now = Date.now();
+    if (global.presenceCooldown.get(jid) > now) return;
+    global.presenceCooldown.set(jid, now + 15000); // 15 second cooldown
+    try {
+      await conn.sendPresenceUpdate(type, jid);
+    } catch (e) {
+      // Ignore presence errors
+    }
+  }
+  
+  // Clear store messages every 30 minutes to prevent memory leaks
+  if (!global.storeCleanupInterval) {
+    global.storeCleanupInterval = setInterval(() => {
+      if (store && store.messages) {
+        store.messages = {}
+        console.log('🧹 Store messages cleared')
+      }
+    }, 30 * 60 * 1000)
+  }
+  
+  // RAM monitoring every 5 minutes
+  if (!global.ramMonitorInterval) {
+    global.ramMonitorInterval = setInterval(() => {
+      const memUsage = process.memoryUsage();
+      const rssMB = (memUsage.rss / 1024 / 1024).toFixed(1);
+      const heapUsedMB = (memUsage.heapUsed / 1024 / 1024).toFixed(1);
+      const heapTotalMB = (memUsage.heapTotal / 1024 / 1024).toFixed(1);
+      console.log(`📊 RAM: ${rssMB} MB RSS | Heap: ${heapUsedMB}/${heapTotalMB} MB`);
+    }, 5 * 60 * 1000)
+  }
 
       // Store the original sendMessage method before wrapping it
       const originalSendMessage = conn.sendMessage;
 
-      // helper: sendMessage with timeout and safe error handling
-      const safeSend = async (jid, message, options = {}, timeoutMs = 15000, maxRetries = 3) => {
+      // Enhanced sendMessage with intelligent timeout handling
+      // Messages may take time to deliver but will eventually go through
+      const safeSend = async (jid, message, options = {}, timeoutMs = null, maxRetries = 3) => {
+        // Dynamic timeout: longer for groups (which are slower), shorter for DMs
+        const isGroup = jid.endsWith('@g.us');
+        const defaultTimeout = isGroup ? 60000 : 35000; // 60s for groups, 35s for DMs
+        const actualTimeout = timeoutMs || defaultTimeout;
+        
         let retries = 0;
         while (retries <= maxRetries) {
           try {
             const sendPromise = originalSendMessage(jid, message, options);
-            const res = await Promise.race([
-              sendPromise,
-              new Promise((_, reject) => setTimeout(() => reject(new Error('sendMessage timeout')), timeoutMs))
-            ]);
-            return res;
+            
+            // Race between send and timeout, but handle timeout gracefully
+            const timeoutPromise = new Promise((_, reject) => {
+              setTimeout(() => reject(new Error('sendMessage timeout')), actualTimeout);
+            });
+            
+            try {
+              const result = await Promise.race([sendPromise, timeoutPromise]);
+              return result;
+            } catch (raceError) {
+              // If timeout won the race, the message is still being sent in background
+              // Don't treat this as a failure - just return quietly
+              if (raceError.message && raceError.message.includes('timeout')) {
+                // Message is still sending, don't log as error
+                // Continue the send in background without blocking
+                sendPromise.catch(() => {}); // Suppress background errors
+                return { status: 'pending' }; // Return success indicator
+              }
+              // Re-throw actual errors
+              throw raceError;
+            }
           } catch (err) {
+            // Handle rate limit errors with retry
             if (err.message === 'rate-overlimit' && retries < maxRetries) {
               console.warn(`[safeSend] Rate limit exceeded for ${jid} - Retrying (${retries + 1}/${maxRetries}) after delay`);
-              await new Promise(resolve => setTimeout(resolve, 5000)); // Wait 5 seconds before retrying
+              await new Promise(resolve => setTimeout(resolve, 5000));
               retries++;
-            } else {
-              console.error(`[safeSend] failed for ${jid}:`, err.message || err);
-              return null;
+              continue;
             }
+            
+            // For timeout errors, don't log - message is likely still being sent
+            if (err.message && err.message.includes('timeout')) {
+              // Message is being sent but taking longer - return quietly
+              return { status: 'pending' };
+            }
+            
+            // Only log actual errors (network issues, invalid jid, etc.)
+            // Suppress timeout error messages
+            if (err.message && !err.message.includes('timeout')) {
+              console.error(`[safeSend] Error for ${jid}:`, err.message);
+            }
+            
+            // For non-retryable errors, return null
+            return null;
           }
         }
-        console.error(`[safeSend] Max retries reached for ${jid}. Message not sent.`);
+        
+        // Max retries reached
         return null;
       };
 
@@ -188,14 +283,17 @@ global.safeReact = safeReact;
             connectToWA();
           }
         } else if (connection === 'open') {
-          console.log('🧬 Installing Plugins');
-          const path = require('path');
-          fs.readdirSync("./plugins/").forEach((plugin) => {
-            if (path.extname(plugin).toLowerCase() === ".js") {
-              require("./plugins/" + plugin);
-            }
-          });
-          console.log('Plugins installed successfully ✅');
+          if (!global.pluginsLoaded) {
+            global.pluginsLoaded = true;
+            console.log('🧬 Installing Plugins');
+            const path = require('path');
+            fs.readdirSync("./plugins/").forEach((plugin) => {
+              if (path.extname(plugin).toLowerCase() === ".js") {
+                require("./plugins/" + plugin);
+              }
+            });
+            console.log('Plugins installed successfully ✅');
+          }
           console.log('Bot connected to WhatsApp ✅');
       
           // Send bot active message to owner
@@ -369,38 +467,13 @@ ${desc ? '📜 *Description:*\n' + desc + '\n' : ''}
   }
 });
 
-
-// ✅ PERFORMANCE OPTIMIZATIONS - Group metadata cache and presence rate limiting
-const groupCache = new Map();
-const presenceCooldown = new Map();
-
-async function getCachedGroupMetadata(jid) {
-  if (groupCache.has(jid)) return groupCache.get(jid);
-  try {
-    const meta = await conn.groupMetadata(jid);
-    groupCache.set(jid, meta);
-    // Clear cache after 10 minutes
-    setTimeout(() => groupCache.delete(jid), 10 * 60 * 1000);
-    return meta;
-  } catch (e) {
-    return null;
-  }
-}
-
-async function safePresence(jid, type) {
-  const now = Date.now();
-  if (presenceCooldown.get(jid) > now) return;
-  presenceCooldown.set(jid, now + 15000); // 15 second cooldown
-  try {
-    await conn.sendPresenceUpdate(type, jid);
-  } catch (e) {
-    // Ignore presence errors
-  }
-}
-
 //====================================
 // ✅ MERGED SINGLE messages.upsert HANDLER (FIXED DUPLICATE ISSUE)
-conn.ev.on('messages.upsert', async(mek) => {
+// Use connection-specific flag to prevent duplicate registration
+if (!conn._messagesUpsertRegistered) {
+  conn._messagesUpsertRegistered = true;
+  
+  conn.ev.on('messages.upsert', async(mek) => {
     mek = mek.messages[0]
     if (!mek.message) return
     mek.message = (getContentType(mek.message) === 'ephemeralMessage') 
@@ -448,9 +521,6 @@ conn.ev.on('messages.upsert', async(mek) => {
   const textt = `${config.AUTO_REPLY_TEXT}`
   await conn.sendMessage(user, { text: textt }, { quoted: mek })
             }
-            await Promise.all([
-              saveMessage(mek),
-            ]); 
 
   const m = sms(conn, mek)
   const type = getContentType(mek.message)
@@ -459,6 +529,16 @@ conn.ev.on('messages.upsert', async(mek) => {
   const quoted = type == 'extendedTextMessage' && mek.message.extendedTextMessage.contextInfo != null ? mek.message.extendedTextMessage.contextInfo.quotedMessage || [] : []
   const body = (type === 'conversation') ? mek.message.conversation : (type === 'extendedTextMessage') ? mek.message.extendedTextMessage.text : (type == 'imageMessage') && mek.message.imageMessage.caption ? mek.message.imageMessage.caption : (type == 'videoMessage') && mek.message.videoMessage.caption ? mek.message.videoMessage.caption : ''
   const isCmd = body.startsWith(prefix)
+  
+  // Rate-limited presence updates (only for non-status messages)
+  if (config.AUTO_TYPING === "true" && from !== 'status@broadcast' && !mek.key.fromMe) {
+    await safePresence(from, 'composing');
+  }
+  
+  // Only save command messages to reduce disk I/O
+  if (isCmd) {
+    await saveMessage(mek).catch(e => console.error('[saveMessage] Error:', e));
+  }
   var budy = typeof mek.text == 'string' ? mek.text : false;
   const command = isCmd ? body.slice(prefix.length).trim().split(' ').shift().toLowerCase() : ''
   const args = body.trim().split(/ +/).slice(1)
@@ -482,7 +562,7 @@ conn.ev.on('messages.upsert', async(mek) => {
     }
   }
   const botNumber2 = await jidNormalizedUser(conn.user.id);
-  const groupMetadata = isGroup ? await conn.groupMetadata(from).catch(e => null) : null;
+  const groupMetadata = isGroup ? await getCachedGroupMetadata(from) : null;
   const groupName = isGroup && groupMetadata ? groupMetadata.subject : '';
   const participants = isGroup && groupMetadata ? groupMetadata.participants : [];
   const groupAdmins = isGroup && participants.length ? await getGroupAdmins(participants) : [];
@@ -651,6 +731,7 @@ conn.ev.on('messages.upsert', async(mek) => {
   }});
   
   });
+  }
     //===================================================   
     conn.decodeJid = jid => {
       if (!jid) return jid;

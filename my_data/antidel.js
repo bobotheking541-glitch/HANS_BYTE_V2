@@ -1,4 +1,4 @@
-const { DATABASE } = require('../lib/database');
+/*const { DATABASE } = require('../lib/database');
 const { DataTypes } = require('sequelize');
 
 const AntiDelDB = DATABASE.define('AntiDelete', {
@@ -85,4 +85,4 @@ module.exports = {
     getAllAntiDeleteSettings,
 };
 
-// codes by Astro
+// codes by Astro*/

@@ -1,238 +1,224 @@
-const os = require("os");
-const { cmd, commands } = require("../command");
-const config = require("../config");
-const { runtime } = require("../lib/functions");
+const { cmd } = require('../command');
+const os = require('os');
+const config = require('../config');
+const { runtime } = require('../lib/functions');
 
+// RAM usage bar
 function ramUsageBar() {
   const total = os.totalmem();
   const free = os.freemem();
   const used = total - free;
   const percent = Math.round((used / total) * 100);
 
-  const bars = 10; 
+  const bars = 10;
   const filled = Math.round((percent / 100) * bars);
   const bar = "█".repeat(filled) + "░".repeat(bars - filled);
 
   return `[${bar}] ${percent}%`;
 }
 
-cmd(
-  {
-    pattern: "menu",
-    alias: ["getmenu"],
-    react: "📔",
-    desc: "get cmd list",
-    category: "main",
-    filename: __filename,
-  },
-  async (robin, mek, m, { from, sender, pushname, reply }) => {
-    try {
-      const time = new Date().toLocaleTimeString();
-      const date = new Date().toLocaleDateString();
-      const platform = process.platform;
-      const uptime = runtime(process.uptime());
+// Split menu into chunks
+function getMenuChunks(prefix) {
+  return [
+    `┌─═✦🖥️ CORE ✦═─┐
+│${prefix}menu
+│${prefix}setprefix
+│${prefix}setenv
+│${prefix}readenv
+│${prefix}env
+│${prefix}ping
+│${prefix}repo
+│${prefix}system
+└──────────≫`,
 
-      let madeMenu = `${pushname}
-┌─═✦🖥️ ${config.BOT_NAME} ✦═─┐
-│⚡ User: ${pushname}
+    `┌─═✦🤖 AI ✦═─┐
+│${prefix}gemini
+│${prefix}claude
+│${prefix}dalle
+│${prefix}deepseek
+│${prefix}mistral
+│${prefix}vision
+│${prefix}lmgpt
+│${prefix}aicheck
+└──────────≫`,
+
+    `┌─═✦📥 DOWNLOADER ✦═─┐
+│${prefix}apk
+│${prefix}ytmp3
+│${prefix}ytmp4
+│${prefix}play
+│${prefix}download
+│${prefix}fbdl
+│${prefix}gitclone
+│${prefix}gdrive
+│${prefix}insta
+│${prefix}tikdl
+│${prefix}xdl
+│${prefix}snackdl
+│${prefix}spotify
+└──────────≫`,
+
+    `┌─═✦🎮 GAMES ✦═─┐
+│${prefix}quiz
+│${prefix}riddle
+│${prefix}typegame
+│${prefix}matchme
+│${prefix}roll
+│${prefix}coinflip
+└──────────≫`,
+
+    `┌─═✦😄 FUN ✦═─┐
+│${prefix}lovecheck
+│${prefix}jokes
+│${prefix}quote
+│${prefix}pickupline
+│${prefix}advice
+│${prefix}meme
+│${prefix}waifu
+│${prefix}pokedex
+└──────────≫`,
+
+    `┌─═✦🛠️ TOOLS ✦═─┐
+│${prefix}savestatus
+│${prefix}randomwalpp
+│${prefix}calculate
+│${prefix}reverse
+│${prefix}define
+│${prefix}currency
+│${prefix}time
+│${prefix}date
+│${prefix}qrcode
+│${prefix}barcode
+│${prefix}qrread
+│${prefix}bcread
+│${prefix}shorten
+└──────────≫`,
+
+    `┌─═✦👥 GROUP MGMT ✦═─┐
+│${prefix}setname
+│${prefix}setdesc
+│${prefix}promote
+│${prefix}demote
+│${prefix}mute
+│${prefix}unmute
+│${prefix}lock
+│${prefix}unlock
+│${prefix}add
+│${prefix}leave
+│${prefix}tagall
+│${prefix}del
+│${prefix}welcome
+│${prefix}getlink
+│${prefix}revokelink
+│${prefix}admins
+│${prefix}ginfo
+│${prefix}hidetag
+│${prefix}tagadmins
+│${prefix}setwelcome
+│${prefix}antilink
+└──────────≫`,
+
+    `┌─═✦🌐 SEARCH ✦═─┐
+│${prefix}google
+│${prefix}wikimedia
+│${prefix}gifsearch
+│${prefix}img
+│${prefix}wallpaper
+│${prefix}happymod
+└──────────≫`,
+
+    `┌─═✦🕵️ STALK ✦═─┐
+│${prefix}ipstalk
+│${prefix}gitstalk
+│${prefix}ttstalk
+│${prefix}igstalk
+│${prefix}wastalk
+│${prefix}npmstalk
+│${prefix}tgstalk
+└──────────≫`,
+
+    `┌─═✦🎨 MEDIA ✦═─┐
+│${prefix}emojimix
+│${prefix}emoji
+│${prefix}ephoto
+│${prefix}toimg
+│${prefix}tostick
+│${prefix}togif
+│${prefix}tovv
+│${prefix}story
+└──────────≫`,
+
+    `┌─═✦📚 UTILITIES ✦═─┐
+│${prefix}bible
+│${prefix}book
+│${prefix}calender
+│${prefix}version
+│${prefix}country
+│${prefix}capcut
+│${prefix}couplepp
+│${prefix}bbc
+│${prefix}fetch
+│${prefix}rcolor
+│${prefix}shapar
+│${prefix}count
+│${prefix}pair
+│${prefix}ghibli
+│${prefix}obfuscate
+│${prefix}ssweb
+│${prefix}saveweb
+│${prefix}ccgen
+│${prefix}soundcloud
+│${prefix}facebook
+│${prefix}gofile
+│${prefix}tourl
+│${prefix}vcf
+│${prefix}proxy
+│${prefix}animequote
+│${prefix}tempmail
+│${prefix}inbox
+│${prefix}readmail
+│${prefix}cleanuri
+│${prefix}vurl
+│${prefix}curl
+│${prefix}wget
+└──────────≫`
+  ];
+}
+
+cmd({
+  pattern: "menu",
+  alias: ["help", "commands"],
+  react: "📜",
+  desc: "Show bot menu",
+  category: "general",
+  filename: __filename
+}, async (conn, m, args, { from, sender, pushname }) => {
+  const time = new Date().toLocaleTimeString();
+  const date = new Date().toLocaleDateString();
+  const platform = process.platform;
+  const uptime = runtime(process.uptime());
+
+  const intro = `┌─═✦🖥️ ${config.BOT_NAME} ✦═─┐
+│⚡ User: ${pushname || 'User'}
 │⌚ Time: ${time}
 │📆 Date: ${date}
 │💾 RAM: ${ramUsageBar()}
 │🧠 Platform: ${platform}
 │📊 Uptime: ${uptime}
-│👑 Owner: ${config.OWNER_NAME}
+│👑 Owner: ${config.OWNER_NAME || 'Unknown'}
 │📦 Version : *2.0.0*
-└───────✦✧✦──────≫
+└───────✦✧✦──────≫`;
 
-┌─═✦🖥️ CORE ✦═─┐
-│${config.PREFIX}menu
-│${config.PREFIX}setprefix
-│${config.PREFIX}setenv
-|${config.PREFIX}readenv
-│${config.PREFIX}env
-│${config.PREFIX}ping
-│${config.PREFIX}repo
-│${config.PREFIX}menu
-│${config.PREFIX}system
-└──────────≫
+  const menuChunks = getMenuChunks(config.PREFIX);
 
-┌─═✦🤖 AI ✦═─┐
-│${config.PREFIX}gemini
-│${config.PREFIX}claude
-│${config.PREFIX}dalle
-│${config.PREFIX}deepseek
-│${config.PREFIX}mistral
-│${config.PREFIX}vision
-│${config.PREFIX}lmgpt
-│${config.PREFIX}aicheck
-└──────────≫
+  // Combine intro + menu chunks + footer into one message
+  const footer = `╰─≫ *HANS BYTE V2*`;
+  const finalMenu = [intro, ...menuChunks, footer].join("\n\n");
 
-┌─═✦📥 DOWNLOADER ✦═─┐
-│${config.PREFIX}apk
-|${config.PREFIX}ytmp3
-│${config.PREFIX}ytmp4
-│${config.PREFIX}play
-│${config.PREFIX}download
-│${config.PREFIX}fbdl
-│${config.PREFIX}gitclone
-│${config.PREFIX}gdrive
-│${config.PREFIX}insta
-│${config.PREFIX}tikdl
-│${config.PREFIX}xdl
-│${config.PREFIX}snackdl
-│${config.PREFIX}spotify
-└──────────≫
-
-┌─═✦🎮 GAMES ✦═─┐
-│${config.PREFIX}quiz
-│${config.PREFIX}riddle
-│${config.PREFIX}typegame
-│${config.PREFIX}matchme
-│${config.PREFIX}roll
-│${config.PREFIX}coinflip
-└──────────≫
-
-┌─═✦😄 FUN ✦═─┐
-│${config.PREFIX}lovecheck
-│${config.PREFIX}jokes
-│${config.PREFIX}quote
-│${config.PREFIX}pickupline
-│${config.PREFIX}advice
-│${config.PREFIX}meme
-│${config.PREFIX}waifu
-│${config.PREFIX}pokedex
-└──────────≫
-
-┌─═✦🛠️ TOOLS ✦═─┐
-│${config.PREFIX}savestatus
-│${config.PREFIX}randomwalpp
-│${config.PREFIX}calculate
-│${config.PREFIX}reverse
-│${config.PREFIX}define
-│${config.PREFIX}currency
-│${config.PREFIX}time
-│${config.PREFIX}date
-│${config.PREFIX}qrcode
-│${config.PREFIX}barcode
-│${config.PREFIX}qrread
-│${config.PREFIX}bcread
-│${config.PREFIX}shorten
-└──────────≫
-
-┌─═✦👥 GROUP MGMT ✦═─┐
-│${config.PREFIX}setname
-│${config.PREFIX}setdesc
-│${config.PREFIX}promote
-│${config.PREFIX}demote
-│${config.PREFIX}mute
-│${config.PREFIX}unmute
-│${config.PREFIX}lock
-│${config.PREFIX}unlock
-│${config.PREFIX}add
-│${config.PREFIX}leave
-│${config.PREFIX}tagall
-│${config.PREFIX}del
-│${config.PREFIX}welcome
-│${config.PREFIX}getlink
-│${config.PREFIX}revokelink
-│${config.PREFIX}admins
-│${config.PREFIX}ginfo
-│${config.PREFIX}hidetag
-│${config.PREFIX}tagadmins
-│${config.PREFIX}setwelcome
-│${config.PREFIX}antilink
-└──────────≫
-
-┌─═✦🌐 SEARCH ✦═─┐
-│${config.PREFIX}google
-│${config.PREFIX}wikimedia
-│${config.PREFIX}gifsearch
-│${config.PREFIX}img
-│${config.PREFIX}wallpaper
-│${config.PREFIX}happymod
-└──────────≫
-
-┌─═✦🕵️ STALK ✦═─┐
-│${config.PREFIX}ipstalk
-│${config.PREFIX}gitstalk
-│${config.PREFIX}ttstalk
-│${config.PREFIX}igstalk
-│${config.PREFIX}wastalk
-│${config.PREFIX}npmstalk
-│${config.PREFIX}tgstalk
-└──────────≫
-
-┌─═✦🎨 MEDIA ✦═─┐
-│${config.PREFIX}emojimix
-│${config.PREFIX}emoji
-│${config.PREFIX}ephoto
-│${config.PREFIX}toimg
-│${config.PREFIX}tostick
-│${config.PREFIX}togif
-│${config.PREFIX}tovv
-│${config.PREFIX}story
-└──────────≫
-
-┌─═✦📚 UTILITIES ✦═─┐
-│${config.PREFIX}bible
-│${config.PREFIX}book
-│${config.PREFIX}calender
-│${config.PREFIX}version
-│${config.PREFIX}country
-│${config.PREFIX}capcut
-│${config.PREFIX}couplepp
-│${config.PREFIX}bbc
-│${config.PREFIX}fetch
-│${config.PREFIX}rcolor
-│${config.PREFIX}shapar
-│${config.PREFIX}count
-│${config.PREFIX}pair
-│${config.PREFIX}ghibli
-│${config.PREFIX}obfuscate
-│${config.PREFIX}ssweb
-│${config.PREFIX}saveweb
-│${config.PREFIX}ccgen
-│${config.PREFIX}soundcloud
-│${config.PREFIX}facebook
-│${config.PREFIX}gofile
-│${config.PREFIX}tourl
-│${config.PREFIX}vcf
-│${config.PREFIX}proxy
-│${config.PREFIX}animequote
-│${config.PREFIX}tempmail
-│${config.PREFIX}inbox
-│${config.PREFIX}readmail
-│${config.PREFIX}cleanuri
-│${config.PREFIX}vurl
-│${config.PREFIX}curl
-│${config.PREFIX}wget
-└──────────≫
-
-╰─≫ *HANS BYTE V2*`;
-
-      const newsletterContext = {
-        mentionedJid: [sender],
-        forwardingScore: 1000,
-        isForwarded: true,
-        forwardedNewsletterMessageInfo: {
-          newsletterJid: "120363422794491778@newsletter",
-          newsletterName: "𝐇𝐀𝐍𝐒 𝐁𝐘𝐓𝐄",
-          serverMessageId: 143,
-        },
-      };
-
-      await robin.sendMessage(
-        from,
-        {
-          image: { url: "https://i.ibb.co/6Rxhg321/Chat-GPT-Image-Mar-30-2025-03-39-42-AM.png" },
-          caption: madeMenu,
-          contextInfo: newsletterContext,
-        },
-        { quoted: mek }
-      );
-    } catch (e) {
-      console.log(e);
-      safeReply(conn, mek.key.remoteJid, `${e}`);
-    }
-  }
-);
+  await conn.sendMessage(from, {
+    image: { url: "https://files.catbox.moe/kzqia3.jpeg" },
+    caption: finalMenu + "\n\n🌐 Join our WA channel: https://whatsapp.com/channel/0029Vb6F9V9FHWpsqWq1CF14",
+    footer: "HANS BYTE V2 • By Hans Tech",
+    headerType: 4 // image
+  }, { quoted: m });
+});

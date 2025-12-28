@@ -5,7 +5,8 @@ class RateLimiter {
   constructor() {
     this.queue = [];
     this.isProcessing = false;
-    this.minDelay = 1500; // Default delay of 1.5 seconds
+    this.minDelay = 200; // Reduced delay to 200ms for faster message delivery
+    this.lastSendTime = 0; // Track last send time
   }
 
   enqueue(task) {
@@ -20,15 +21,22 @@ class RateLimiter {
     const task = this.queue.shift();
 
     try {
+      // Only delay if we sent a message recently (within minDelay)
+      const timeSinceLastSend = Date.now() - this.lastSendTime;
+      if (timeSinceLastSend < this.minDelay) {
+        await new Promise(resolve => setTimeout(resolve, this.minDelay - timeSinceLastSend));
+      }
+      
       await task();
+      this.lastSendTime = Date.now();
     } catch (error) {
       console.error('[RateLimiter] Task failed:', error);
+      this.lastSendTime = Date.now();
     }
 
-    setTimeout(() => {
-      this.isProcessing = false;
-      this.processQueue();
-    }, this.minDelay);
+    this.isProcessing = false;
+    // Process next item immediately if queue has items
+    setImmediate(() => this.processQueue());
   }
 }
 
