@@ -104,6 +104,8 @@ cmd(
 └──────────≫
 
 ┌─═✦🛠️ TOOLS ✦═─┐
+│${config.PREFIX}savestatus
+│${config.PREFIX}randomwalpp
 │${config.PREFIX}calculate
 │${config.PREFIX}reverse
 │${config.PREFIX}define

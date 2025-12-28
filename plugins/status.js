@@ -3,16 +3,16 @@ const { downloadMediaMessage } = require('../lib/msg.js');
 const config = require('../config');
 
 cmd({
-  pattern: 'vv',
-  alias: ['viewonce'],
-  react: '↩️',
-  desc: 'Extract image, video, audio and voice notes from view-once (with caption)',
+  pattern: 'status',
+  alias: ['savestatus', 'stsave'],
+  react: '📥',
+  desc: 'Save image, video, audio or voice note from WhatsApp status (with caption)',
   category: 'utility',
   filename: __filename
 }, async (robin, mek, m, { from, quoted, reply, sender }) => {
   try {
     if (!quoted) {
-      return reply('❌ Reply to a view-once image, video, audio or voice note');
+      return reply('❌ Reply to a status image, video, audio or voice note');
     }
 
     const hasImage = quoted.imageMessage;
@@ -20,15 +20,15 @@ cmd({
     const hasAudio = quoted.audioMessage;
 
     if (!hasImage && !hasVideo && !hasAudio) {
-      return reply('❌ Unsupported media type');
+      return reply('❌ Unsupported status media type');
     }
 
     const buffer = await downloadMediaMessage(quoted, 'buffer');
     if (!buffer) {
-      return reply('❌ Failed to download media');
+      return reply('❌ Failed to download status media');
     }
 
-    // 📌 CAPTION (image / video / audio)
+    // 📌 CAPTION (works for image / video / audio)
     const caption =
       quoted.imageMessage?.caption ||
       quoted.videoMessage?.caption ||
@@ -46,7 +46,7 @@ cmd({
       }
     };
 
-    // 🖼️ IMAGE
+    // 🖼️ STATUS IMAGE
     if (hasImage) {
       await robin.sendMessage(from, {
         image: buffer,
@@ -56,7 +56,7 @@ cmd({
       }, { quoted: mek });
     }
 
-    // 🎥 VIDEO + 🎧 AUDIO EXTRACTION
+    // 🎥 STATUS VIDEO + 🎧 AUDIO
     if (hasVideo) {
       await robin.sendMessage(from, {
         video: buffer,
@@ -65,7 +65,7 @@ cmd({
         contextInfo
       }, { quoted: mek });
 
-      // extract audio from video
+      // extract audio
       await robin.sendMessage(from, {
         audio: buffer,
         mimetype: 'audio/mp4',
@@ -74,7 +74,7 @@ cmd({
       }, { quoted: mek });
     }
 
-    // 🎶 AUDIO / 🎙️ VOICE NOTE
+    // 🎶 STATUS AUDIO / 🎙️ VOICE
     if (hasAudio) {
       const isVoice = quoted.audioMessage?.ptt === true;
 
@@ -82,7 +82,7 @@ cmd({
         audio: buffer,
         mimetype: quoted.mimetype || 'audio/ogg; codecs=opus',
         ptt: isVoice,
-        caption,
+        caption, // 👈 yes, audio captions are preserved
         contextInfo
       }, { quoted: mek });
     }
@@ -92,13 +92,13 @@ cmd({
     });
 
   } catch (err) {
-    console.error('vv error:', err);
+    console.error('status save error:', err);
     reply(`❌ Error: ${err.message}`);
 
     if (config.ERROR_CHAT) {
       await robin.sendMessage(
         config.ERROR_CHAT,
-        { text: `❌ vv command error\nFrom: ${from}\n${err.stack}` }
+        { text: `❌ status command error\nFrom: ${from}\n${err.stack}` }
       );
     }
   }

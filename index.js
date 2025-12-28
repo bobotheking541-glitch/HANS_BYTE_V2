@@ -43,7 +43,7 @@ const {
   const Crypto = require('crypto')
   const path = require('path')
   const prefix = config.PREFIX
-  
+  const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
   const ownerNumber = ['923182832887']
 
   // load lid-utils for robust owner resolution (supports lid mapping files)
@@ -241,140 +241,166 @@ global.safeReact = safeReact;
     }
   })
 //==============WELCOME======================
+// Put this near top of your file so you see it on startup
+console.log('✅ Welcome handler module loaded');
+
+// small helper
+const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
+
+// Registering listener (log so we know it ran)
+console.log('✅ Registering group-participants.update listener');
+
 conn.ev.on('group-participants.update', async (update) => {
   try {
-    if (!(config.WELCOME === true || config.WELCOME === "true")) return;
+    console.log('🔥 group-participants.update fired:', JSON.stringify(update));
 
-    const { id: groupId, participants = [], action } = update;
-    if (!groupId || !participants.length) return;
-
-    let metadata = {};
-    try {
-      metadata = await conn.groupMetadata(groupId);
-    } catch {
-      metadata = { subject: 'Group', participants: [], desc: '' };
+    // Basic config gate: treat falsy as disabled; allow string/boolean true
+    if (!(config && (config.WELCOME === true || config.WELCOME === "true" || config.WELCOME))) {
+      console.log('ℹ️ Welcome messages disabled by config.WELCOME:', config ? config.WELCOME : 'no config');
+      return;
     }
 
-    const totalMembers = (metadata.participants || []).length;
-    const totalAdmins = (metadata.participants || []).filter(p => p.admin || p.isAdmin || p.isSuperAdmin).length;
-    const groupDesc = metadata.desc ? metadata.desc : '';
-    const descDisplay = groupDesc.length > 100 ? groupDesc.slice(0, 100) + '... (see group menu for full description)' : groupDesc;
+    const groupId = update.id;
+    const rawParticipants = update.participants || [];
+    const action = update.action; // 'add', 'remove', 'promote', 'demote', etc.
 
+    if (!groupId || !groupId.endsWith('@g.us')) {
+      console.log('ℹ️ Ignoring non-group event or missing groupId:', groupId);
+      return;
+    }
+
+    if (!rawParticipants.length) {
+      console.log('ℹ️ No participants in update, ignoring');
+      return;
+    }
+
+    // fetch metadata once
+    let metadata = { subject: 'Group', participants: [], desc: '' };
+    try {
+      metadata = await conn.groupMetadata(groupId) || metadata;
+    } catch (err) {
+      console.warn('⚠️ Could not fetch group metadata, using fallback:', err && err.message ? err.message : err);
+    }
+
+    const members = metadata.participants || [];
+    const totalMembers = members.length;
+    const totalAdmins = members.filter(p => p.admin || p.isAdmin || p.isSuperAdmin).length;
+
+    // prepare description (truncate if too long)
+    let desc = metadata.desc || '';
+    if (desc && desc.length > 160) {
+      desc = desc.slice(0, 160).trim() + '…\n📌 View group info for full description';
+    }
+
+    // fetch group profile once (fallback image if fails)
     let groupPfp = 'https://i.ibb.co/9gCjCwp/OIG4-E-D0-QOU1r4-Ru-CKuf-Nj0o.jpg';
-    try { groupPfp = await conn.profilePictureUrl(groupId, 'image'); } catch {}
+    try {
+      const pfp = await conn.profilePictureUrl(groupId, 'image');
+      if (pfp) groupPfp = pfp;
+    } catch (e) {
+      // ignore and keep fallback
+    }
+
+    // small initial delay so WhatsApp can sync the join/leave
+    await delay(1400);
 
     const now = new Date();
     const dateStr = now.toLocaleDateString('en-GB');
     const timeStr = now.toLocaleTimeString('en-GB');
 
-    for (const participant of participants) {
-      const userId = participant.id;
-      if (!userId || userId.endsWith('@newsletter')) continue;
+    // normalize participant entries: accept object {id, ...} or string 'xxx@...'
+    const participants = rawParticipants.map(p => (typeof p === 'string' ? p : (p && p.id ? p.id : null))).filter(Boolean);
 
-      const pInfo = (metadata.participants || []).find(p => p.id === userId || p.jid === userId || p.participant === userId);
-      const userName = pInfo?.notify || pInfo?.pushname || userId.split('@')[0];
-      const isAdmin = (pInfo && (pInfo.admin || pInfo.isAdmin || pInfo.isSuperAdmin)) ? "✅" : "❌";
+    for (const userId of participants) {
+      try {
+        // find member info in metadata
+        const info = members.find(m => m.id === userId || m.jid === userId || m.participant === userId) || {};
+        const name = info.notify || info.pushname || (userId.split && userId.split('@')[0]) || userId;
+        const wasAdmin = (info.admin || info.isAdmin || info.isSuperAdmin) ? '✅' : '❌';
 
-      const groupInfo = `🏷 *${metadata.subject || 'Group'}*\n👥 *Members:* ${totalMembers}\n🛡 *Admins:* ${totalAdmins}`;
-      const userInfo = `👤 *@${userName}*\n🆔 *ID:* ${userId}\n🔐 *Admin:* ${isAdmin}`;
-      const groupDescText = descDisplay ? `📜 *Description:* ${descDisplay}` : '';
-
-      const contextInfoBase = {
-        forwardingScore: 1000,
-        isForwarded: true,
-        externalAdReply: {
-          showAdAttribution: true,
-          mediaType: 2,
-          title: action === 'add' ? '🌟 Welcome!' : '👋 Goodbye!',
-          body: "Click to open Hans Byte MD Channel",
-          thumbnailUrl: 'https://i.ibb.co/9gCjCwp/OIG4-E-D0-QOU1r4-Ru-CKuf-Nj0o.jpg',
-          sourceUrl: 'https://www.whatsapp.com/channel/0029VaZDIdxDTkKB4JSWUk1O',
-        }
-      };
-
-      // add a slight delay so user can see it
-      await new Promise(r => setTimeout(r, 3000));
-
-      if (action === 'add') {
-        const welcomeText = 
-`✨╔═══『 👋 WELCOME 』═══╗✨
-${userInfo}
+        if (action === 'add') {
+          const welcomeText = `
+✨╔═══『 👋 WELCOME 』═══╗✨
+👤 *@${name}*
 📆 *Joined:* ${dateStr}
 🕰 *Time:* ${timeStr}
-${groupInfo}
-${groupDescText}
-╚═════ ⛩ *HANS BYTE V2* ═════╝`;
+🔐 *Admin:* ${wasAdmin}
 
-        await conn.sendMessage(groupId, {
-          image: { url: groupPfp },
-          caption: welcomeText,
-          mentions: [userId],
-          contextInfo: contextInfoBase,
-        });
+🏷 *${metadata.subject || 'Group'}*
+👥 *Members:* ${totalMembers}
+🛡 *Admins:* ${totalAdmins}
 
-        console.log(`✅ Sent welcome for ${userName}`);
-      }
+${desc ? '📜 *Description:*\n' + desc + '\n' : ''}
+╚═════ ⛩ *HANS BYTE V2* ═════╝
+`;
 
-      if (action === 'remove') {
-        const goodbyeText = 
-`💔╔═══『 GOODBYE 』═══╗💔
-👤 *@${userName}*
+          await conn.sendMessage(groupId, {
+            image: { url: groupPfp },
+            caption: welcomeText,
+            mentions: [userId]
+          });
+
+          console.log(`✅ Sent welcome for ${userId} (${name})`);
+        } else if (action === 'remove') {
+          const goodbyeText = `
+💔╔═══『 GOODBYE 』═══╗💔
+👤 *@${name}*
 📆 *Date:* ${dateStr}
 🕰 *Time:* ${timeStr}
+🛡 *Was Admin:* ${wasAdmin}
 👥 *Members now:* ${totalMembers}
-🛡 *Was Admin:* ${isAdmin}
-🆔 *ID:* ${userId}
-${groupDescText}
-╚═════ ⛩ *HANS BYTE V2* ═════╝`;
+╚═════ ⛩ *HANS BYTE V2* ═════╝
+`;
+          await conn.sendMessage(groupId, { text: goodbyeText, mentions: [userId] });
+          console.log(`✅ Sent goodbye for ${userId} (${name})`);
+        } else {
+          // optional: handle promote/demote etc
+          console.log(`ℹ️ Ignored action ${action} for ${userId}`);
+        }
 
-        await conn.sendMessage(groupId, {
-          text: goodbyeText,
-          mentions: [userId],
-          contextInfo: contextInfoBase,
-        });
-
-        console.log(`✅ Sent goodbye for ${userName}`);
+        // small pause between sends so WhatsApp doesn't drop/merge messages
+        await delay(600);
+      } catch (innerErr) {
+        console.error('❌ Error sending welcome/goodbye for', userId, innerErr && innerErr.message ? innerErr.message : innerErr);
       }
     }
   } catch (err) {
-    console.error("⚠️ Group participant event error:", err);
+    console.error('❌ group-participants.update handler error:', err && err.message ? err.message : err);
   }
 });
 
-//====================================
-          conn.ev.on('messages.upsert', async ({ messages }) => {
+
+// ✅ PERFORMANCE OPTIMIZATIONS - Group metadata cache and presence rate limiting
+const groupCache = new Map();
+const presenceCooldown = new Map();
+
+async function getCachedGroupMetadata(jid) {
+  if (groupCache.has(jid)) return groupCache.get(jid);
   try {
-    const m = messages[0]
-    if (!m.message) return // ignore notifications, deletes, etc.
-
-    // Who sent it?
-    const from = m.key.participant || m.key.remoteJid || 'unknown'
-    const isGroup = m.key.remoteJid.endsWith('@g.us')
-
-    // AUTO TYPING
-    if (config.AUTO_TYPING === "true") {
-      await conn.sendPresenceUpdate('composing', m.key.remoteJid)
-    }
-
-    // AUTO RECORDING
-    if (config.AUTO_RECORDING === "true") {
-      await conn.sendPresenceUpdate('recording', m.key.remoteJid)
-    }
-
-    // AUTO READ
-    if (config.AUTO_READ === "true") {
-      await conn.readMessages([m.key])
-    }
-
-    // Your other message logic here...
-    console.log('Message from:', from)
-  } catch (err) {
-    console.error('❌ messages.upsert handler error:', err)
+    const meta = await conn.groupMetadata(jid);
+    groupCache.set(jid, meta);
+    // Clear cache after 10 minutes
+    setTimeout(() => groupCache.delete(jid), 10 * 60 * 1000);
+    return meta;
+  } catch (e) {
+    return null;
   }
-})
-  //=============readstatus=======
-        
-  conn.ev.on('messages.upsert', async(mek) => {
+}
+
+async function safePresence(jid, type) {
+  const now = Date.now();
+  if (presenceCooldown.get(jid) > now) return;
+  presenceCooldown.set(jid, now + 15000); // 15 second cooldown
+  try {
+    await conn.sendPresenceUpdate(type, jid);
+  } catch (e) {
+    // Ignore presence errors
+  }
+}
+
+//====================================
+// ✅ MERGED SINGLE messages.upsert HANDLER (FIXED DUPLICATE ISSUE)
+conn.ev.on('messages.upsert', async(mek) => {
     mek = mek.messages[0]
     if (!mek.message) return
     mek.message = (getContentType(mek.message) === 'ephemeralMessage') 
