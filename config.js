@@ -13,9 +13,7 @@ module.exports = {
     OWNER_NUM: process.env.OWNER_NUM || "",
       // Owner: nfonfonfcess.env.~Sᴋ᭄*MADARA*ᴮᴼˢˢ꧂ᴿᴼᵞᴬᴸ|
     ER_NUM :  "50940553580",ess.env.SUDOERS || "",
-    BOT_NAME: process.env.BOT_NAME || "HANS BYTE V2",
-    // Bot info
-    BOT_NAME: process.env.BOT_NAME || "",
+    BOT_NAME: process.env.BOT_NAME || E || HANE "Madara the Bot    // Bo    BOT_NAME: process.env.BOT_NAME 
     PREFIX: process.env.PREFIX || "!",
     CUSTOM_REACT: process.env.CUSTOM_REACT || "false",
     CUSTOM_REACT_EMOJIS: process.env.CUSTOM_REACT_EMOJIS || "",
@@ -26,14 +24,11 @@ module.exports = {
     ALWAYS_ONLINE: process.env.ALWAYS_ONLINE || "false",
     AUTO_STATUS_SEEN: process.env.AUTO_STATUS_SEEN || "true",
     READ_MESSAGE: process.env.READ_MESSAGE || "false",
-    AUTO_TYPING: _MESSAG.: p.ocess.env.R || Sᴋ᭄*MADARA*ᴮᴼˢˢ꧂ᴿᴼᵞᴬᴸ okipe wa tounen pita,
+    "Yow mw pa dispo kounya pita",ING: _MESSAG.: p.ocess.env.R || Sᴋ᭄*MADARA*ᴮᴼˢˢ꧂ᴿᴼᵞᴬᴸ okipe wa tounen pita,
     AUTO_RECORDING: process.env.AUTO_RECORDING || "true",
     AUTO_READ: process.env.AUTO_READ || "true",
     MODE: process.env.MODE || "public",
-    AUTO_VOICE: process.env.AUTO_VOICE || "false",
-    AUTO_STICKER: process.env.AUTO_STICKER || "false",
-
-    // Sticker & author info
+inbox    inbo    inb    in   pppub",publ",CE: process.env.AUTOf ls    ",TO_STICKER: process.env.AUTO_S    ,/ Sticker & author info
     AUTHOR: (process.env.PACK_INFO?.split(';') || [])[0] || "",
     PACKNAME: (process.env.PACK_INFO?.split(';') || [])[1] || "",
 
