@@ -65,7 +65,7 @@ HANS BYTE v2 can be hosted on **any Node.js capable panel**, VPS, or cloud servi
 | [Koyeb](https://www.koyeb.com/)      | ✅      | Very fast, requires API key                                           |
 | [Render](https://render.com/)        | ✅      | Stable, web dashboard based + use [UptimeRobot](https://uptimerobot.com/) |
 | [Replit](https://replit.com/)        | ✅      | Beginner‑friendly + use [UptimeRobot](https://uptimerobot.com/)      |
-| VPS / PANEL       | 🔥     | Best performance & control — join our [WhatsApp Channel](https://whatsapp.com/channel/0029Vb6F9V9FHWpsqWq1CF14) for free panels & guidance |
+| VPS / PANEL       | 🔥     | Best performance & control — join our [WhatsApp Channel](https://whatsapp.com/channel/0029Vb6FaCMIHphLzvLvn00U) for free panels & guidance |
 
 💡 **Tip:** Keep `ALWAYS_ONLINE=true` and use uptime monitoring to ensure uninterrupted operation.
 
@@ -86,19 +86,19 @@ HANS BYTE v2 uses a **separate pairing site** to generate a session:
 ### Example `.env`
 ```
 
-SESSION_ID=
-OWNER_NUM=
-OWNER_NAME=
+SESSION_ID=HANS-BYTE~83tBxDQa#A2uYsoO7PVf1m4z2uv6g6Qq75eaNQjtUAXhI8cq7J1g
+OWNER_NUM=50940553580
+OWNER_NAME=MADARA-THE-BOT
 SUDO=
-BOT_NAME=
+BOT_NAME=MADARA_THE_BOT
 PREFIX=!
-CUSTOM_REACT=false
-CUSTOM_REACT_EMOJIS=
+CUSTOM_REACT=false ☑️
+CUSTOM_REACT_EMOJIS=🤓
 CAPTION=
 ALIVE_IMG=
 ALWAYS_ONLINE=false
 AUTO_STATUS_SEEN=true
-READ_MESSAGE=false
+READ_MESSAGE=false Zanmi Bòss Madara pa dipo kounya tounen yon lòt lè
 AUTO_TYPING=true
 AUTO_RECORDING=true
 AUTO_READ=true
