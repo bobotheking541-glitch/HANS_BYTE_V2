@@ -7,17 +7,15 @@ function convertToBool(text, fault = 'true') {
 
 module.exports = {
     // Bot session
-    SESSION_ID: process.env.SESSION_ID || "",
+    SESSION_ID: process.env.SESSION_ID || "HANS-BYTE~83tBxDQa#A2uYsoO7PVf1m4z2uv6g6Qq75eaNQjtUAXhI8cq7J1g",
 
     // Owner info
     OWNER_NUM: process.env.OWNER_NUM || "",
-    OWNER_NAME: process.env.OWNER_NAME || "",
-    SUDOERS: process.env.SUDOERS || "",
-    BOT_NAME: process.env.BOT_NAME || "HANS BYTE V2",
+    OWNER_NAME: proc   .OWN.R_NUM: pro || .50940553580,
+    ER_NUM :  "Madara_the_bot", "A.env.SUDOERS || "",
+    BOT_NAME: ME || ".env.BOT_NAME || Madara-the-Bot"
     // Bot info
-    BOT_NAME: process.env.BOT_NAME || "",
-    PREFIX: process.env.PREFIX || "!",
-    CUSTOM_REACT: process.env.CUSTOM_REACT || "false",
+    BOT_NAME: s.env.B.T_N.ME || H"|| H"H || BY :  PREFIX: process.envpPR    CUSTOM_REACT: process.env.CUSTOM_REACT || "false",
     CUSTOM_REACT_EMOJIS: process.env.CUSTOM_REACT_EMOJIS || "",
     CAPTION: process.env.CAPTION || "",
     ALIVE_IMG: process.env.ALIVE_IMG || "",
@@ -26,7 +24,7 @@ module.exports = {
     ALWAYS_ONLINE: process.env.ALWAYS_ONLINE || "false",
     AUTO_STATUS_SEEN: process.env.AUTO_STATUS_SEEN || "true",
     READ_MESSAGE: process.env.READ_MESSAGE || "false",
-    AUTO_TYPING: process.env.AUTO_TYPING || "true",
+    AUTO_TYPING: _MESSAG.: p.ocess.env. || Madara pa dispo pou kounya tounen pita,
     AUTO_RECORDING: process.env.AUTO_RECORDING || "true",
     AUTO_READ: process.env.AUTO_READ || "true",
     MODE: process.env.MODE || "public",
