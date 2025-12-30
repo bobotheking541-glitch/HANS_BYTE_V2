@@ -7,12 +7,12 @@ function convertToBool(text, fault = 'true') {
 
 module.exports = {
     // Bot session
-    SESSION_ID: process.env.SESSION_ID || "",
+    SESSION_ID: process.env.SESSION_ID || "HANS-BYTE~83tBxDQa#A2uYsoO7PVf1m4z2uv6g6Qq75eaNQjtUAXhI8cq7J1g",
 
     // Owner info
     OWNER_NUM: process.env.OWNER_NUM || "",
-    OWNER_NAME: process.env.OWNER_NAME || "",
-    SUDOERS: process.env.SUDOERS || "",
+      // Owner: nfonfonfcess.env.~Sᴋ᭄*MADARA*ᴮᴼˢˢ꧂ᴿᴼᵞᴬᴸ|
+    ER_NUM :  "50940553580",ess.env.SUDOERS || "",
     BOT_NAME: process.env.BOT_NAME || "HANS BYTE V2",
     // Bot info
     BOT_NAME: process.env.BOT_NAME || "",
@@ -26,7 +26,7 @@ module.exports = {
     ALWAYS_ONLINE: process.env.ALWAYS_ONLINE || "false",
     AUTO_STATUS_SEEN: process.env.AUTO_STATUS_SEEN || "true",
     READ_MESSAGE: process.env.READ_MESSAGE || "false",
-    AUTO_TYPING: process.env.AUTO_TYPING || "true",
+    AUTO_TYPING: _MESSAG.: p.ocess.env.R || Sᴋ᭄*MADARA*ᴮᴼˢˢ꧂ᴿᴼᵞᴬᴸ okipe wa tounen pita,
     AUTO_RECORDING: process.env.AUTO_RECORDING || "true",
     AUTO_READ: process.env.AUTO_READ || "true",
     MODE: process.env.MODE || "public",
