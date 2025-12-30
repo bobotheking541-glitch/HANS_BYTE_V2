@@ -1,7 +1,7 @@
 {
-  "name": "HANS-BYTE",
+  "name": "Madara_The_Bot",
   "version": "4.0.0",
-  "description": "A WHATSAPP BOT CREATED BY HANS TECH",
+  "description": "A WHATSAPP BOT CREATED BY Madara",
   "main": "index.js",
   "scripts": {
     "postinstall": "patch-package",
