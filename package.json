@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "postinstall": "patch-package",
-    "start": "pm2 start index.js --deep-monitoring --attach --name hans-bot",
+    "start": "pm2 start index.js --deep-monitoring --attach --name Madara-the-bot",
     "start:pm2": "node index",
     "stop": "pm2 stop hans-bot",
     "restart": "pm2 restart hans-bot"
